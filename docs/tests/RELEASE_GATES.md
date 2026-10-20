@@ -20,8 +20,8 @@ Derived summary of `masterprompt.md` section 16. No commercial, deployment, real
 - Repository contained only `masterprompt.md`; no files overwritten.
 - `masterprompt.md` SHA-256 was recorded before and after scaffolding.
 - `AGENTS.md` directs future agents to the authoritative specification.
-- Local Git repository initialized with no remote and no commit.
-- Lint, typecheck, tests and production build documented in `docs/tests/TEST_RESULTS.md`.
+- Local Git repository initialized and published to https://github.com/bigtwighomes/BuildScope.
+- Lint, typecheck, tests and production build documented in `docs/tests/TEST_RESULTS.md`; the initial GitHub Actions CI run passed.
 - Cost data defaults OFF; live payments disabled; tests enforce approval flags.
 
 ## P1 gate evidence

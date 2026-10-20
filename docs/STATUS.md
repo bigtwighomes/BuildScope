@@ -85,6 +85,8 @@ P3 entry criteria in `docs/product/SCOPE_AND_MVP.md` were not met: the owner has
 - Fixture ground truth verified: Northline total `$486,540.00`; Cascade materials total `$209,200.00`; Sagebrush calculated total `$505,662.40` versus stated `$508,162.40`.
 - Upload route verified with three synthetic PDFs: HTTP 200 and 94,957-byte analysis response. Image-only and encrypted fixtures are accepted as documents but produce zero findings and explicit `NO_TEXT` / `ENCRYPTED` rejections.
 - Master prompt SHA-256 unchanged.
+- Initial commit `c05924b` pushed to https://github.com/bigtwighomes/BuildScope on `main`. GitHub Actions CI run `39514336718` passed format, lint, typecheck, 51 tests and production build on Ubuntu/Node 24.
+- No deployment exists; GitHub hosts the source repository only.
 
 ## Unresolved problems and limitations
 
@@ -103,7 +105,7 @@ P3 entry criteria in `docs/product/SCOPE_AND_MVP.md` were not met: the owner has
 - **CI:** workflow exists but has never run; no remote.
 - **Development advisory:** 5 high-severity `braces` advisories in the lint toolchain; production dependencies are clean; no safe non-breaking fix was applied.
 - **ESLint 9 deprecation:** retained because `eslint-plugin-react` peer support stops at ESLint 9.
-- **No commits:** local repository intentionally has no commit because the owner has not requested one.
+- **Remote repository:** published at https://github.com/bigtwighomes/BuildScope. The initial commit and CI result are recorded in `docs/tests/TEST_RESULTS.md`.
 
 ## Decisions requiring owner authorization
 

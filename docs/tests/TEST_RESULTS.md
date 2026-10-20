@@ -8,7 +8,7 @@
 - Node.js: v25.6.1 (local; non-LTS)
 - npm: 11.9.0
 - Project root: repository checkout (local Windows run)
-- Repository: local Git, branch `main`, no commits, no remote
+- Repository: https://github.com/bigtwighomes/BuildScope, branch `main`, initial commit `c05924b`
 - Master prompt SHA-256: `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`
 
 ## Final P0-P3 verification (2026-10-20)
@@ -78,6 +78,15 @@ npm run verify:browser
 
 Artifacts are gitignored under `artifacts/browser-check/`; `results.json` records the check list. Automated browser checks do not replace owner acceptance or independent human accessibility review.
 
+## GitHub Actions CI (2026-10-20)
+
+| Check                                | Actual                                                   | Status |
+| ------------------------------------ | -------------------------------------------------------- | ------ |
+| Initial push workflow                | Run `39514336718`, commit `c05924b`, Ubuntu / Node.js 24 | PASS   |
+| Format, lint, typecheck, test, build | Completed successfully                                   | PASS   |
+
+The workflow file is `.github/workflows/ci.yml`. The Edge browser harness is not part of CI.
+
 ## P1 public endpoint reachability (2026-10-20)
 
 | Check                              | Command / endpoint                                             | Actual                                                         | Status          |
@@ -119,8 +128,8 @@ Notes:
 
 ## Not executed / unverified
 
-- GitHub Actions CI (no remote).
-- Node.js 24 and CI Linux behavior.
+- Edge browser harness in GitHub Actions (it remains a local Windows check).
+- Deployment, hosting or production behavior.
 - Screen-reader behavior with assistive technology; automated axe checks do not prove screen-reader usability.
 - Independent human product and accessibility review.
 - AI extraction, OCR, arbitrary-vendor PDF accuracy, approved extraction corpus, prompt-injection variants beyond the synthetic fixtures.
