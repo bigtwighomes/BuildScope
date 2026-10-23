@@ -52,4 +52,5 @@ Derived record. Requirement text in `masterprompt.md` is authoritative. Status v
 - Paid cost data and live payments are not authorized. `BLOCKED` is intentional.
 - The separate P2 demo was removed; `/demo` now redirects to the unified sample flow. Historical results for the demo remain in `docs/tests/TEST_RESULTS.md`.
 - Automated browser checks were run on Windows/Edge on 2026-10-22. They do not replace independent human review or owner acceptance.
+- Fresh-clone recovery from source commit `4eac0a3` passed `npm ci`, `npm run verify` and `npm run verify:browser`; CI run `39885055503` passed. This is recovery/integration evidence, not production verification.
 - The deterministic lab does not satisfy the full P3 gate because AI-provider, real-document, retention and security approvals are absent.

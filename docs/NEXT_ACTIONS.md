@@ -82,7 +82,8 @@ If the owner chooses to continue toward commercial P3:
   `https://github.com/bigtwighomes/BuildScope` are authorized as development backups.
 - `docs/DISASTER_RECOVERY.md` records clone, verification and recovery procedures.
 - Do not force-push, rewrite history or create a public release without approval.
-- The current verified working tree is uncommitted; commit and push are the next recovery step.
+- The verified source tree is committed and pushed at `4eac0a3`; fresh-clone recovery and CI passed.
+- Documentation evidence for the recovery is committed separately.
 
 ## Approval queue
 

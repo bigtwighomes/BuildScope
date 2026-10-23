@@ -8,8 +8,8 @@
 - Node.js: v25.6.1 (local; non-LTS)
 - npm: 11.9.0
 - Project root: repository checkout (local Windows run)
-- Repository: https://github.com/bigtwighomes/BuildScope, branch `main`, HEAD `8398425`
-- Working tree: current verified changes are uncommitted
+- Repository: https://github.com/bigtwighomes/BuildScope, branch `main`, verified source commit `4eac0a3`
+- Working tree: clean in the fresh recovery clone; docs-only recovery evidence was committed separately
 - Browser: installed Microsoft Edge
 - Master prompt SHA-256: `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`
 
@@ -104,6 +104,23 @@ Artifacts are gitignored under `artifacts/browser-check/`; `results.json` record
 | Cache-Control               | `no-store` on analysis responses                                                           | PASS   |
 | Secrets                     | No server secret is exposed through `NEXT_PUBLIC_*`; `.env.example` contains placeholders  | PASS   |
 
+## Fresh-clone recovery (2026-10-22)
+
+Recovery source: `main` at `4eac0a3`; fresh clone in a temporary directory under `%TEMP%`; no local files copied.
+
+| Check                    | Actual                                                                                                      | Status |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------- | ------ |
+| Clone                    | `git clone https://github.com/bigtwighomes/BuildScope.git`; HEAD `4eac0a3`; working tree clean              | PASS   |
+| Master prompt            | SHA-256 `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`                                  | PASS   |
+| Environment              | Node.js v25.6.1; npm 11.9.0                                                                                 | PASS   |
+| `npm ci`                 | 390 packages installed; 5 high-severity development-toolchain advisories remain                             | PASS   |
+| `npm run verify`         | Format, lint, typecheck, 6 files / 46 tests and production build passed                                     | PASS   |
+| `npm run verify:browser` | 125/125 Edge checks passed; print artifact 370,673 bytes                                                    | PASS   |
+| Build warning            | Next.js emitted a non-fatal Turbopack root warning because the temporary clone was under the home directory | NOTED  |
+| GitHub Actions           | CI run `39885055503` passed on `4eac0a3`                                                                    | PASS   |
+
+The recovery clone proves the committed source, fixtures and commands are sufficient to rebuild and verify the synthetic application. It does not verify deployment, production data, real documents, AI extraction, licensed cost data or payments.
+
 ## Historical baseline (2026-10-20)
 
 The original P0-P3 baseline on HEAD `8398425` recorded:
@@ -114,7 +131,7 @@ The original P0-P3 baseline on HEAD `8398425` recorded:
 - Initial publication workflow `39514336718` passed on commit `c05924b`.
 - Master prompt SHA-256 remained `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`.
 
-The 2026-10-22 unified five-step revision replaced the separate P2 demo source, added project-specific scope, change reviews and screening questions, and moved tests/browser checks to the current counts above. The historical results remain evidence for the earlier commit, not the current working tree.
+The 2026-10-22 unified five-step revision replaced the separate P2 demo source, added project-specific scope, change reviews and screening questions, and moved tests/browser checks to the current counts above. The historical results remain evidence for the earlier commit, not the current source commit.
 
 ## P1 public endpoint reachability (2026-10-20)
 
@@ -131,7 +148,6 @@ Reachability does not mean terms, rate limits or commercial use are verified. No
 
 ## Not executed / unverified
 
-- Fresh-clone recovery against the current working tree. The remote still points at HEAD `8398425`; the 2026-10-22 changes must be committed and pushed before a true fresh-clone exercise can verify them.
 - Edge browser harness in GitHub Actions. It remains a local Windows check.
 - Deployment, hosting or production behavior.
 - Screen-reader behavior with assistive technology; automated axe checks do not prove screen-reader usability.

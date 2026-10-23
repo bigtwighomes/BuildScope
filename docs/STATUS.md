@@ -4,7 +4,7 @@
 - **Authoritative specification:** `masterprompt.md` v1.0 (research baseline 2026-10-20)
 - **Master prompt SHA-256:** `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391` (unchanged)
 - **Active phase:** unified synthetic five-step proposal review, with the deterministic document lab retained
-- **Overall status:** P0 `LOCALLY VERIFIED`; P1 research `LOCALLY VERIFIED` with licensing and REA setup `BLOCKED`; unified product UX `LOCALLY VERIFIED` with owner review pending; deterministic P3 slice `IMPLEMENTED / LOCALLY VERIFIED`; P4 local change and screening support `PARTIAL`; commercial P3 and all paid/production paths `BLOCKED`
+- **Overall status:** P0 `LOCALLY VERIFIED`; P1 research `LOCALLY VERIFIED` with licensing and REA setup `BLOCKED`; unified product UX `LOCALLY VERIFIED` with fresh-clone/CI recovery evidence and owner review pending; deterministic P3 slice `IMPLEMENTED / LOCALLY VERIFIED`; P4 local change and screening support `PARTIAL`; commercial P3 and all paid/production paths `BLOCKED`
 - **Product status:** Synthetic five-step review only. Uploads are processed in memory and discarded. Corrections and customer-entered changes exist only in the browser session. No AI, OCR, persistence, accounts, payments, entitlements, licensed cost data, live screening, report delivery or deployment exists.
 
 ## Phase ledger
@@ -66,7 +66,9 @@ P3 entry criteria in `docs/product/SCOPE_AND_MVP.md` remain unmet: the owner has
 - Sample API: 3 documents, 0 rejections, 21 findings, 20 findings with evidence, 32 line items and `SAMPLE-*` provenance.
 - Upload API: streamed request-body enforcement returns 413 for oversized bodies; image-only and encrypted files produce `NO_TEXT` / `ENCRYPTED` rejections and no accepted documents.
 - Master prompt SHA-256 unchanged.
-- HEAD remains `8398425`; the 2026-10-22 changes are currently uncommitted, so no new CI run exists.
+- Verified source commit `4eac0a3` was pushed to `main`; the working tree was clean before the docs-only recovery evidence update.
+- Fresh-clone recovery from `4eac0a3` passed `npm ci`, `npm run verify` (**46 tests**) and `npm run verify:browser` (**125/125**) on 2026-10-22 local time.
+- GitHub Actions CI run `39885055503` passed format, lint, typecheck, tests and production build on `4eac0a3`.
 - No deployment exists; GitHub hosts the source repository only.
 
 ## Unresolved problems and limitations

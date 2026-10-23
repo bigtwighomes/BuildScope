@@ -154,10 +154,10 @@ Record each recovery exercise with:
 
 The current recovery exercise is recorded in `docs/tests/TEST_RESULTS.md`.
 
-**Current status (2026-10-22):** the unified five-step revision is verified in the working
-tree but not yet committed or pushed. A true fresh-clone recovery test must wait until the
-verified tree is available on `main`; the remote currently points at the earlier HEAD
-`8398425`. Do not treat the working tree as recoverable until it is committed and pushed.
+**Current status (2026-10-22):** the unified five-step revision is committed and pushed at
+`4eac0a3`. A fresh clone from `main` passed `npm ci`, `npm run verify` (46 tests) and
+`npm run verify:browser` (125/125 checks). GitHub Actions CI run `39885055503` passed on that
+commit. The docs-only recovery evidence commit is separate from the verified source commit.
 
 ## Known recovery limitations
 
