@@ -1,37 +1,46 @@
 # BuildScope Check
 
-**Evidence-linked comparison of construction proposals, scope responsibilities and unknown conditions.**
+**Evidence-linked comparison of construction proposals, scope responsibilities, change exposure and open questions.**
 
-BuildScope Check explores a practical problem in residential construction: a materials-only kit, an installed fixed-price bid and a cost-plus estimate cannot be compared by their headline totals. The product turns supplied proposals into scope status, responsibility assignments, cited evidence, change-order exposure and prioritized questions for the correct bidder.
+BuildScope Check explores a practical problem in residential construction: a materials-only kit, an installed fixed-price bid and a cost-plus estimate cannot be compared by their headline totals. The product turns supplied proposals into scope status, responsibility assignments, cited evidence, customer-entered change exposure and prioritized questions for the correct bidder.
 
 > [!WARNING]
-> **This is a synthetic research and development prototype, not a production service.** Do not upload confidential, customer or proprietary documents. There is no AI extraction, OCR, durable storage, authentication, payment, entitlement or licensed cost data. Nothing in this repository is a real quote, legal opinion, cost estimate or professional certification.
+> **This is a synthetic research and development prototype, not a production service.** Do not upload confidential, customer or proprietary documents. There is no AI extraction, OCR, durable storage, authentication, payment, entitlement or licensed cost data. Nothing in this repository is a real quote, legal opinion, cost estimate, property report or professional certification.
 
 [![CI](https://github.com/bigtwighomes/BuildScope/actions/workflows/ci.yml/badge.svg)](https://github.com/bigtwighomes/BuildScope/actions/workflows/ci.yml)
 
-| P2 synthetic walkthrough                           | P3 deterministic document lab                             |
-| -------------------------------------------------- | --------------------------------------------------------- |
-| ![P2 scope comparison](docs/assets/demo-scope.png) | ![P3 analysis overview](docs/assets/analyze-overview.png) |
+## Current experience
 
-## What is in the repository
+The application is one five-step review flow:
 
-The repository contains two connected experiences:
+| Step | What the customer does                                                                             |
+| ---- | -------------------------------------------------------------------------------------------------- |
+| 1    | Choose a project type, project name and optional location.                                         |
+| 2    | Add two or three text-based PDF proposals, or load the allowlisted synthetic example.              |
+| 3    | Review extracted fields and line items, correct mistakes, and inspect rejection reasons.           |
+| 4    | Compare scope, responsibilities, costs and unknowns, customer-entered changes, and site questions. |
+| 5    | Print or save the evidence-linked report, including limitations and unverified items.              |
 
-| Experience               | Route      | Description                                                                                                                                                                                                      |
-| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P2 synthetic walkthrough | `/demo`    | A fully fabricated three-bidder project with eight views: overview, scope comparison, responsibilities, costs and unknowns, changes, location and risks, findings and questions, and a printable report preview. |
-| P3 document lab          | `/analyze` | Upload up to three synthetic text-based PDFs and inspect deterministic extraction, evidence-linked scope comparison, responsibilities, financial reconciliation, findings, corrections and a printable report.   |
+Routes:
 
-Both experiences are deliberately bounded. The P2 demo does not accept uploads. The P3 lab does not use AI, OCR, external services or persistent storage.
+- `/` - landing page.
+- `/analyze` - empty five-step review.
+- `/analyze?sample=1` - bundled synthetic example.
+- `/demo` - compatibility redirect to `/analyze?sample=1`.
+- `POST /api/analyze` - text-PDF analysis.
+- `POST /api/analyze/sample` - allowlisted synthetic sample analysis.
 
 ## Core capabilities
 
-### Scope comparison
+### Project-aware scope comparison
 
+- Project types: whole-home/new build, materials package or kit, and bathroom renovation.
 - Seven explicit statuses: `INCLUDED`, `EXCLUDED`, `NOT_SPECIFIED`, `SEPARATELY_CONTRACTED`, `CONFLICTING`, `UNREADABLE` and `NOT_APPLICABLE`.
-- Seventeen comparable scope areas, plus an uncategorized intake bucket: sitework, foundation, structure, roofing, windows, plumbing, electrical, HVAC, insulation, finishes, freight, waste, permits, utilities, landscaping, appliances and installation labor.
+- Project-specific scope libraries, plus categories observed in the uploaded documents:
+  - whole-home/materials package: 22 areas including survey, permits, demolition, sitework, drainage, foundation, structure, roofing, exterior, windows, plumbing, electrical, HVAC, insulation, drywall, finishes, appliances, utilities, inspections, freight, waste and landscaping;
+  - bathroom renovation: 14 areas including demolition, plumbing, electrical, ventilation, drywall, waterproofing, tile, vanity, finishes and inspections.
 - Silence is represented as `NOT_SPECIFIED`, never as included or free.
-- Filters, text search and source-evidence drilldown.
+- Filters and source-evidence drilldown.
 
 ### Responsibility matrix
 
@@ -57,22 +66,31 @@ Money is parsed and calculated in integer cents. The analysis separates:
 - line-item extensions and allowances;
 - expected tax where a rate is stated;
 - calculated totals and deltas;
-- unpriced or unknown scope.
+- excluded or separately contracted scope;
+- unpriced or unknown conditions.
 
 The synthetic Sagebrush fixture intentionally contains a **$2,500.00** discrepancy between its line-item arithmetic plus tax (`$505,662.40`) and its stated total (`$508,162.40`). The analysis reports the discrepancy instead of silently accepting either total.
 
+### Change review
+
+The Changes view records customer-reported working notes. Additions, credits, baseline amount, percentage fee, fixed fee and schedule impact remain separate. A percentage fee applies only to positive changed work. Unknown fees, financing and indirect impacts stay visible instead of becoming zero. Entries are held only in the current browser session and are not extracted from contract terms.
+
+### Site and project questions
+
+The Site questions view is a sourced checklist, not a screening result. Flood, permits, radon, contractor licence, concealed moisture and bathroom ventilation questions are marked `not_evaluated`, include official source links where available, and state what BuildScope did not check. No address is geocoded and no risk conclusion is asserted.
+
 ### Prompt-injection resistance
 
-Instruction-like text inside a PDF is treated as untrusted source content. It can appear in evidence and produce a security finding, but it is never executed or treated as an instruction. The browser suite verifies that markup embedded in fixture text is escaped and not executed.
+Instruction-like text inside a PDF is treated as untrusted source content. It can appear in evidence and produce a security finding, but it is never executed or treated as an instruction. The browser suite verifies that fixture markup is rendered as inert text and does not execute.
 
-## How the P3 lab works
+## How analysis works
 
 ```text
 PDF upload
    |
    v
-Intake validation
-   - multipart request, 8 MiB request limit
+Bounded intake
+   - streamed request body, 8 MiB request limit
    - up to 3 files, 4 MiB each
    - PDF magic bytes and duplicate SHA-256 detection
    - 40 pages and 500,000 extracted characters per document
@@ -90,18 +108,19 @@ Typed deterministic parser
    |
    v
 Analysis builder
-   - scope comparison
+   - project-aware scope comparison
    - responsibility matrix
    - integer-cent arithmetic
-   - evidence-linked findings and bidder questions
+   - evidence-linked findings, change review and screening questions
    |
    v
-Review workspace
-   - filters, evidence drilldown, corrections and audit log
-   - browser-print report
+Five-step workspace
+   - review, corrections and rejection reasons
+   - comparison views
+   - printable report
 ```
 
-The PDF bytes are processed in memory for the lifetime of the request and are not written to disk, a database or a queue. The initial `/analyze` view reads the allowlisted sample fixtures from `tests/fixtures/synthetic/`.
+PDF bytes are processed in memory for the lifetime of the request and are not written to disk, a database or a queue. The sample route reads allowlisted PDFs from `fixtures/samples/`. Uploaded analyses use `DOC-*` identifiers; the bundled sample uses `SAMPLE-*` identifiers with synthetic-fixture provenance.
 
 ## Technology
 
@@ -130,8 +149,8 @@ npm run dev
 Open:
 
 - `http://localhost:3000/` - landing page
-- `http://localhost:3000/demo` - P2 synthetic walkthrough
-- `http://localhost:3000/analyze` - P3 synthetic PDF lab
+- `http://localhost:3000/analyze` - empty five-step review
+- `http://localhost:3000/analyze?sample=1` - synthetic example
 
 No environment file is required for the default safe configuration. To customize local settings, copy `.env.example` to `.env.local`. Never commit `.env.local` or real credentials.
 
@@ -157,12 +176,12 @@ Responses use `Cache-Control: no-store` and return the raw `Analysis` JSON objec
 | Status | Meaning                                                    |
 | ------ | ---------------------------------------------------------- |
 | `200`  | Analysis completed; inspect `documents` and `rejections`   |
-| `400`  | Missing files or invalid multipart form data               |
-| `413`  | Declared or actual request size exceeds the limit          |
+| `400`  | Missing files, invalid form data or too many files         |
+| `413`  | Declared or streamed request size exceeds the 8 MiB limit  |
 | `415`  | Request is not multipart form data                         |
 | `500`  | Unexpected server failure; no document content is returned |
 
-The APIs have **no authentication, authorization or rate limiting**. Do not expose this lab to the internet or use it with confidential documents.
+The APIs have **no authentication, authorization, origin policy or rate limiting**. Do not expose this lab to the internet or use it with confidential documents.
 
 ## Configuration
 
@@ -180,10 +199,11 @@ The APIs have **no authentication, authorization or rate limiting**. Do not expo
 
 Additional browser-check settings:
 
-| Variable                  | Default                                                              | Purpose                                   |
-| ------------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
-| `BUILDSCOPE_BASE_URL`     | `http://127.0.0.1:3117` when auto-starting; otherwise set explicitly | Running app URL for browser verification. |
-| `BUILDSCOPE_BROWSER_PATH` | Windows Edge path                                                    | Override the browser executable.          |
+| Variable                  | Default                                                  | Purpose                                                             |
+| ------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| `BUILDSCOPE_BASE_URL`     | unset; auto-starts production on `http://127.0.0.1:3117` | Use an already-running app instead of auto-starting                 |
+| `BUILDSCOPE_SKIP_BUILD`   | unset                                                    | Set to `1` to reuse the existing `.next` build before auto-starting |
+| `BUILDSCOPE_BROWSER_PATH` | Windows Edge path                                        | Override the browser executable                                     |
 
 ## Verification
 
@@ -205,28 +225,34 @@ next build
 
 Current local baseline:
 
-- **6 test files, 51 tests passing**
-- Production build succeeds for `/`, `/_not-found`, `/demo`, `/analyze` and both API routes
-- 84/84 automated Edge browser checks passing, including axe WCAG 2.1 A/AA, keyboard focus, tablet/mobile reflow, print PDFs, upload rejection and correction flows
+- **6 test files, 46 tests passing**
+- Production build succeeds for `/`, `/_not-found`, `/demo`, `/analyze`, `/icon.svg`, `/api/analyze` and `/api/analyze/sample`
+- **125/125 automated Edge browser checks passing**, including axe WCAG 2.1 A/AA, keyboard focus, tablet/mobile reflow, print PDF generation, upload rejection, corrections, changes, screening questions and the synthetic sample
 
-To run the browser check against a running production server:
+Run the browser suite:
 
 ```powershell
-npm run build
-npm start
+npm run verify:browser
+```
+
+The harness builds, starts a production server on port 3117 by default, runs 24 scenarios, writes artifacts to `artifacts/browser-check/`, and stops the server. It targets Windows and installed Microsoft Edge. To test an already-running server:
+
+```powershell
 $env:BUILDSCOPE_BASE_URL = "http://127.0.0.1:3000"
 npm run verify:browser
 ```
 
-The browser harness currently targets Windows and installed Microsoft Edge. Browser artifacts are written to `artifacts/browser-check/` and are gitignored. GitHub Actions runs format checking, lint, typecheck, tests and the production build; it does not run the Edge harness.
+GitHub Actions runs format checking, lint, typecheck, tests and the production build; it does not run the Edge harness.
 
 ### Synthetic fixture ground truth
 
-| Fixture   | Pricing basis     | Stated total  | Expected reconciliation                         |
-| --------- | ----------------- | ------------- | ----------------------------------------------- |
-| Northline | Fixed price       | `$486,540.00` | Matches: `$459,000.00` subtotal + 6% tax        |
-| Cascade   | Materials package | `$209,200.00` | Matches stated materials total; tax not stated  |
-| Sagebrush | Cost plus         | `$508,162.40` | Expected `$505,662.40`; discrepancy `$2,500.00` |
+| Fixture   | Project type        | Pricing basis     | Stated total  | Expected reconciliation                                |
+| --------- | ------------------- | ----------------- | ------------- | ------------------------------------------------------ |
+| Northline | New home            | Fixed price       | `$486,540.00` | Matches: `$459,000.00` subtotal + 6% tax               |
+| Cascade   | New home            | Materials package | `$209,200.00` | Matches stated materials total; tax not stated         |
+| Sagebrush | New home            | Cost plus         | `$508,162.40` | Expected `$505,662.40`; discrepancy `$2,500.00`        |
+| Willow    | Bathroom renovation | Fixed price       | `$40,957.50`  | Bathroom scope with waterproofing and ventilation      |
+| Harbor    | Bathroom renovation | Fixed price       | `$27,700.00`  | Bathroom scope excluding waterproofing and ventilation |
 
 The fixtures also exercise excluded scope, separately contracted work, conflicting specifications, duplicate delivery lines, partial/unreadable pages, image-only PDFs, encrypted PDFs, prompt-injection text and reviewer corrections.
 
@@ -236,30 +262,30 @@ The fixtures also exercise excluded scope, separately contracted work, conflicti
 src/
   app/
     page.tsx                  Landing page
-    demo/page.tsx             P2 synthetic workspace
-    analyze/page.tsx          P3 document workspace
-    api/analyze/route.ts      Multipart PDF upload API
-    api/analyze/sample/route.ts Synthetic sample API
+    demo/page.tsx             Compatibility redirect to the sample flow
+    analyze/page.tsx          Five-step document workspace
+    api/analyze/route.ts      Bounded multipart PDF upload API
+    api/analyze/sample/route.ts Allowlisted synthetic sample API
     globals.css               Shared responsive and print styles
   components/
-    demo/                     P2 views and navigation
-    analyze/                  P3 workspace, panels and report
+    analyze/                  Five-step workspace, panels and report
   lib/
-    demo/                     P2 fixture and deterministic helpers
-    documents/                P3 types, PDF extraction, parser, analysis and intake
+    documents/                Types, PDF extraction, parser, analysis, changes, risks and intake
     config.ts                 Safety-gated configuration
 scripts/
   generate-fixtures.mjs       Regenerates synthetic PDF fixtures
-  browser-check.mjs           Edge/axe/PW browser verification
+  browser-check.mjs           Edge/axe production verification
 tests/
-  unit/                       Configuration, money and P2 analysis tests
+  unit/                       Configuration, money change and risk tests
   integration/                PDF intake, analysis and API tests
-  fixtures/synthetic/         Synthetic PDFs used by tests and the sample route
+  fixtures/synthetic/         Synthetic PDFs used by tests
+fixtures/samples/             Allowlisted PDFs served by the sample API
 docs/
   STATUS.md                   Evidence-backed phase ledger
   NEXT_ACTIONS.md             Authorized next work and approval queue
   REQUIREMENTS_TRACEABILITY.md Requirement-to-evidence map
   DECISIONS.md                Architecture and safety decisions
+  DISASTER_RECOVERY.md        Fresh-clone and recovery procedure
   tests/                      Test plan, results and release gates
   research/                   Public-source research and licensing status
 ```
@@ -267,22 +293,25 @@ docs/
 ## Safety boundaries
 
 - **Synthetic data only.** No real customer, supplier or confidential documents.
-- **No AI or OCR.** P3 extraction is deterministic and template-specific.
-- **No durable storage.** Uploads are held in memory for the request and discarded.
-- **Unknown is not zero.** Missing scope, unpriced work and unknown responsibilities remain explicit.
+- **No AI or OCR.** Extraction is deterministic and template-specific.
+- **No durable storage.** Uploads are held in memory for the request and discarded; corrections and changes live only in the browser session.
+- **Unknown is not zero.** Missing scope, unpriced work, unknown fees and unknown responsibilities remain explicit.
 - **No fabricated evidence.** Findings without support do not receive invented citations.
 - **No paid cost data.** Cost-data mode defaults to `OFF`; licensed data requires written approval.
 - **No live payments.** Payment mode defaults to `disabled`.
+- **No live screening.** Site questions are checklist items, not flood, permit or hazard findings.
 - **No deployment or production claim.** This repository is not production-ready.
 
 ## Known limitations
 
 - The parser is built around the generated synthetic templates; arbitrary vendor PDF layouts are not supported.
 - No OCR, image-only PDF support, AI extraction or model-based classification.
-- No authentication, authorization, rate limiting, tenant isolation or retention/deletion policy.
-- The 8 MiB request limit is enforced after multipart parsing; no streaming or reverse-proxy limit is verified.
-- The extraction timeout stops the request wait but does not synchronously cancel the underlying PDF.js work.
-- `/analyze` and `/api/analyze/sample` depend on local fixture files being present in the checkout.
+- No three-way planning-estimate dataset; known costs and unknown items are separated, but no localized ranges exist.
+- Change entries are customer-reported session notes, not extracted or verified change orders.
+- Site questions are unverified checklist items with source links; no live data integration exists.
+- No authentication, authorization, origin policy, rate limiting, tenant isolation or retention/deletion policy.
+- The extraction timeout stops the request wait but cannot synchronously cancel a PDF.js promise that never settles.
+- `/analyze?sample=1` and `/api/analyze/sample` depend on `fixtures/samples/` being present in the checkout.
 - No server-side PDF generation; reports print through the browser.
 - No database, file storage, accounts, entitlements, Stripe, webhooks or secure report delivery.
 - Automated browser checks are not a substitute for independent human accessibility or product review.
@@ -293,9 +322,10 @@ The project is a locally verified synthetic prototype:
 
 - P0 foundation: verified locally.
 - P1 research: complete with licensing and REA setup blocked.
-- P2 synthetic UX: implemented and locally verified; owner acceptance pending.
+- Unified five-step product UX: implemented and locally verified; owner acceptance pending.
 - P3 deterministic document lab: implemented and locally verified; full AI/commercial P3 gate remains blocked.
-- P4-P9: planned, not started or blocked.
+- P4 local change and screening-question support: partial.
+- P5-P9: not started, planned or blocked.
 
 The authoritative project brief is [`masterprompt.md`](masterprompt.md). Detailed evidence and limitations are recorded in [`docs/STATUS.md`](docs/STATUS.md) and [`docs/tests/TEST_RESULTS.md`](docs/tests/TEST_RESULTS.md).
 

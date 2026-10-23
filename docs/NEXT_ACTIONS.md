@@ -7,51 +7,54 @@ Derived record. Authorized work must stay inside the current phase gate in `mast
 - [x] Inspect the working directory and confirm no pre-existing application work.
 - [x] Preserve `masterprompt.md` unchanged and record its SHA-256.
 - [x] Create the `AGENTS.md` session bootstrap.
-- [x] Select and scaffold the stack with baseline commands and CI proposal.
+- [x] Select and scaffold the stack with baseline commands and CI.
 - [x] Add executable safety gates for cost data and payments.
-- [x] Complete the full baseline verification and update the evidence ledger.
+- [x] Complete the baseline verification and update the evidence ledger.
 - [ ] Owner review of stack and P0 deliverables.
 - [ ] Resolve or accept the ESLint 9 deprecation warning before later dependency upgrades.
-- [ ] Track the development-only `braces` advisory in `eslint-config-next` and upgrade when a patched, non-breaking release is available.
+- [ ] Track the development-only `braces` advisory and upgrade when a patched, non-breaking release is available.
 
-## P1 — Research and feasibility (complete except approvals)
+## P1 - Research and feasibility (complete except approvals)
 
-- [x] Lawful public competitor review of RemodelerIQ, EstimateHawk and BidCompare AI / GreatBuildz, with retrieval dates and labels. See `docs/research/COMPETITOR_MATRIX.md`.
-- [x] Canonical competitor and REA records created.
-- [x] REA provenance and Node requirements checked. Setup **not** executed; Node 25.6.1 is outside the documented support list. See `docs/research/REA_EVIDENCE.md`.
-- [x] Craftsman API shape independently verified; licensing inquiry drafted. **Not sent.** See `docs/research/CRAFTSMAN_LICENSE.md`.
-- [x] Free public-data reachability recorded in `docs/research/DATA_SOURCE_REGISTER.md`. No adapter activated.
-- [x] `docs/product/SCOPE_AND_MVP.md` produced with an explicit MVP boundary.
-- [x] `docs/research/PRICING_AND_UNIT_ECONOMICS.md` and `docs/research/MARKET_OPPORTUNITIES.md` produced without invented costs.
+- [x] Lawful public competitor review with retrieval dates and labels. See `docs/research/COMPETITOR_MATRIX.md`.
+- [x] REA provenance and Node requirements checked. Setup **not** executed.
+- [x] Craftsman API shape verified; licensing inquiry drafted. **Not sent.**
+- [x] Free public-data reachability recorded. No adapter activated.
+- [x] MVP boundary, differentiation and pricing hypotheses documented without invented costs.
 - [ ] Owner decision on the Craftsman inquiry and REA setup.
 
-## P2 — Synthetic product UX (implemented)
+## Unified five-step product (implemented)
 
-- [x] Landing page with transparent demo positioning and non-active capability list.
-- [x] `/demo` interactive workspace: Overview, Scope, Responsibilities, Costs & unknowns, Changes, Location & risks, Findings & questions, Report preview.
-- [x] Scope status filters, search, row evidence drilldown, responsibility scope selector, change status filters, copy-question controls, browser print.
-- [x] Synthetic fixture with allowance, discrepancy, conflicting-spec, missing-scope and change-order cases.
-- [x] Deterministic unit tests for totals, evidence completeness, unknowns and change baselines.
-- [x] Automated Edge browser, keyboard, axe accessibility, responsive and print-PDF walkthrough (`npm run verify:browser`).
-- [ ] Owner review of the P2 walkthrough.
-- [ ] Independent human product/accessibility review if the owner requires one beyond automation.
+- [x] Replace the separate P2 demo with one five-step flow at `/analyze`.
+- [x] Keep `/demo` as a compatibility redirect to `/analyze?sample=1`; remove demo source and stale demo tests.
+- [x] Project setup for new home, materials package and bathroom renovation.
+- [x] Upload, validation, rejection reasons and synthetic sample loading.
+- [x] Review with corrections, audit entries and preserved evidence.
+- [x] Compare views: scope, responsibilities, costs/unknowns, changes, site questions and questions.
+- [x] Customer-entered change arithmetic with explicit unknown exposure.
+- [x] Sourced `not_evaluated` site questions with safe external links.
+- [x] Eight-section printable report with provenance, changes, site questions and limitations.
+- [x] Streamed 8 MiB request limit, security headers and fixture-backed sample path.
+- [x] 46 unit/integration tests and 125 Edge/axe checks passing locally.
+- [ ] Owner acceptance of the unified walkthrough.
+- [ ] Independent human product/accessibility review if required.
 
 ## P3 - Deterministic synthetic document lab (implemented; commercial gate closed)
 
-The bounded lab was implemented without AI or OCR. It does not satisfy the full P3 entry gate and does not authorize real-document processing.
+The bounded lab does not satisfy the full P3 entry gate and does not authorize real-document processing.
 
-- [x] Text-PDF intake with size/count/page limits, magic-byte validation, duplicate hashes and explicit rejection codes.
-- [x] Native per-page text extraction with cleanup; no OCR.
-- [x] Deterministic parsing for synthetic templates: line items, allowances, exclusions, specs, responsibilities, terms and pricing basis.
-- [x] Evidence spans for extracted facts and findings; prompt-injection text is treated only as source evidence.
-- [x] Deterministic scope comparison, responsibility matrix, integer-cent financial reconciliation and prioritized findings.
+- [x] Text-PDF intake with file/count/page/text/time limits, magic-byte validation, duplicate hashes and explicit rejection codes.
+- [x] Native per-page extraction with cleanup; no OCR.
+- [x] Deterministic parsing for synthetic templates: line items, allowances, exclusions, specifications, responsibilities, terms and pricing basis.
+- [x] Evidence spans for extracted facts and findings; prompt-injection text is evidence only.
+- [x] Project-specific scope comparison, responsibility matrix, integer-cent reconciliation and prioritized findings.
 - [x] Reviewer corrections with audit log and preserved original evidence.
-- [x] `/analyze` review UI and printable report; `/api/analyze` and `/api/analyze/sample` APIs.
-- [x] Ground-truth tests: 6 files / 51 tests; 84/84 browser checks.
-- [ ] Owner acceptance of the P2 walkthrough and P3 lab.
+- [x] Review/compare/report UI and both analysis APIs.
+- [x] Ground-truth tests, including bathroom fixtures and streamed oversized upload.
+- [ ] Owner acceptance of the walkthrough and lab.
 - [ ] Written AI-provider, data-rights, accuracy and per-report budget decision.
 - [ ] Real-document privacy, retention, deletion and security design.
-- [ ] Authentication/authorization, rate limiting and streaming request-body enforcement before any internet-facing use.
+- [ ] Authentication/authorization, origin policy and rate limiting before any internet-facing use.
 - [ ] Independent human review of arbitrary vendor PDFs; current parsers are template-specific.
 
 If the owner chooses to continue toward commercial P3:
@@ -62,6 +65,25 @@ If the owner chooses to continue toward commercial P3:
 4. Measure extraction and citation accuracy on an approved, non-confidential corpus.
 5. Keep deterministic reconciliation as the calculation authority regardless of extraction method.
 
+## P4 - Local change and risk support (partial)
+
+- [x] Customer-entered additions, credits, baseline, percentage fee, fixed fee and schedule impact.
+- [x] Percentage fee applied only to positive changed work; unknown exposure stays visible.
+- [x] Sourced flood, permit, radon, contractor, moisture and ventilation questions marked `not_evaluated`.
+- [x] No fabricated location, parcel, flood or compliance conclusion.
+- [ ] Extract change orders and revisions from documents.
+- [ ] Verified approval workflow and baseline preservation across revisions.
+- [ ] Disclosure register and counsel-reviewed disclosure language.
+- [ ] Live public-source adapters with provenance, fallbacks and contract tests.
+
+## Backup status
+
+- Routine non-destructive commits and pushes to
+  `https://github.com/bigtwighomes/BuildScope` are authorized as development backups.
+- `docs/DISASTER_RECOVERY.md` records clone, verification and recovery procedures.
+- Do not force-push, rewrite history or create a public release without approval.
+- The current verified working tree is uncommitted; commit and push are the next recovery step.
+
 ## Approval queue
 
 No external action below is authorized:
@@ -71,9 +93,9 @@ No external action below is authorized:
 - Activating Craftsman, RSMeans or other paid cost data.
 - Enabling Stripe test checkout against real accounts or any live payment.
 - Processing real customer documents.
-- Deployment, remote push, domain purchase or production configuration.
+- Deployment, public release, domain purchase or production configuration.
 - Legal conclusions or public claims about compliance, savings or accuracy.
 
 ## Highest-value next task
 
-Owner review of the P2 synthetic walkthrough and the bounded P3 deterministic lab. If accepted, decide whether to authorize a written AI-provider spike and real-document handling design. Cost data stays OFF until a written license exists.
+Owner review of the unified five-step synthetic walkthrough and the bounded deterministic lab. If accepted, authorize a commit/push plus fresh-clone recovery check, then decide whether to approve a written AI-provider spike and real-document handling design. Cost data stays OFF until a written license exists.

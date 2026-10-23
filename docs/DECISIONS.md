@@ -65,7 +65,7 @@ Derived record. `masterprompt.md` remains authoritative. Decisions require owner
 ## ADR-0007 — P2 synthetic demo architecture
 
 - **Date:** 2026-10-20
-- **Status:** Accepted for P2; owner review requested.
+- **Status:** Superseded by ADR-0010 on 2026-10-22; retained as historical context.
 - **Context:** P2 requires a branded, responsive, synthetic walkthrough with usable comparison, evidence and known-versus-unknown views, without uploads, AI, payments or paid data. The P0 page was a static status page.
 - **Decision:** Implement a client-side demo workspace at `/demo` backed by a typed synthetic fixture in `src/lib/demo/`. Pure deterministic helpers live in `src/lib/demo/analysis.ts` and are unit-tested. The landing page at `/` previews the fixture and lists non-active capabilities. The report preview prints via the browser dialog; no server PDF generation exists yet.
 - **Rationale:** Keeps P2 free of unverified AI, network and payment dependencies, keeps arithmetic deterministic and testable, and leaves P3 extraction as the only remaining unknown for a real pipeline.
@@ -96,14 +96,42 @@ Derived record. `masterprompt.md` remains authoritative. Decisions require owner
 - **Rationale:** Validates the most testable P3 mechanisms with real PDFs and real evidence spans while avoiding unapproved AI, retention and vendor exposure. It also gives the owner a concrete review surface before authorizing a provider.
 - **Consequences:**
   - The parsers are template-specific; they are not a general extraction solution.
-  - No real customer document may be uploaded. The API has no authentication, rate limiting or retention policy.
-  - The request-size check occurs after multipart parsing; a streaming/proxy limit and broader abuse controls are required before internet exposure.
+  - No real customer document may be uploaded. The API has no authentication, origin policy, rate limiting or retention policy.
+  - **Amended 2026-10-22:** the request body is now streamed and bounded at 8 MiB before multipart parsing; the sample PDFs moved to `fixtures/samples/`. Authentication, origin policy, rate limiting and reverse-proxy limits are still required before internet exposure.
   - Full P3 remains `BLOCKED` until the owner records the provider, real-document, retention and security decisions.
+
+## ADR-0010 — Unified five-step review replaces the separate demo
+
+- **Date:** 2026-10-22
+- **Status:** Accepted for the synthetic product; owner acceptance pending.
+- **Context:** The separate `/demo` workspace and `/analyze` lab duplicated navigation, comparison and report concepts. The product needed one homeowner-facing flow rather than a demo and a lab.
+- **Decision:** Replace the demo as the primary experience with one five-step `/analyze` flow: Project, Documents, Review, Compare and Report. Keep `/demo` only as a compatibility redirect to `/analyze?sample=1`, and remove the demo source, fixture helpers and tests. The sample remains explicitly synthetic and is loaded only when requested.
+- **Consequences:** There is one workspace and one report surface to maintain. The sample route must remain allowlisted, and no customer-entered or uploaded content is persisted. Historical P2 demo evidence is retained in the test results but no longer describes the current interface.
+
+## ADR-0011 — Explicit provenance, local change notes and screening questions
+
+- **Date:** 2026-10-22
+- **Status:** Accepted for the synthetic product; owner review requested.
+- **Context:** The word `synthetic` on the analysis object was too coarse to distinguish a bundled sample from a user upload. The product also needed bounded P4-facing interactions without implying verified change orders or live risk screening.
+- **Decision:**
+  - Replace the boolean with `AnalysisProvenance`: `origin` (`sample` or `upload`), deterministic processing, `dataClassification` (`bundled-synthetic-fixture` or `user-upload-unverified`) and `costDataMode: "OFF"`.
+  - Use `SAMPLE-*` and `DOC-*` analysis IDs.
+  - Treat changes as customer-reported, session-local working notes. Apply a percentage fee only to positive changed work and keep credits, schedule, financing and indirect effects explicit.
+  - Treat flood, permit, radon, contractor, moisture and ventilation items as sourced `not_evaluated` checklist questions. Do not geocode, query a parcel or assert a risk conclusion.
+- **Consequences:** The UI cannot present a sample as an uploaded document or a checklist question as a screening result. Change and risk data are not durable and must not be represented as verified contract terms or professional findings.
+
+## ADR-0012 — Production-mode browser verification
+
+- **Date:** 2026-10-22
+- **Status:** Accepted for local verification.
+- **Context:** The earlier Edge harness ran against `next dev`. Development hydration timing and HMR WebSocket noise made interactions flaky and obscured real UI failures.
+- **Decision:** `npm run verify:browser` builds the app and starts `next start` on port 3117 by default. It runs 24 scenarios, filters only the expected 413 console entry, writes artifacts under `artifacts/browser-check/`, and stops the server. Setting `BUILDSCOPE_BASE_URL` uses an existing server instead.
+- **Consequences:** Browser evidence reflects production output and no longer depends on development hydration timing. It remains a Windows/Edge local check and is not part of GitHub Actions.
 
 ## Pending owner decisions
 
 - Approval before any `rea-agents setup` execution, including the OpenCode client flag and the unsupported local Node condition.
 - Approval before sending the prepared Craftsman licensing inquiry.
 - Approval of any commercial cost-data or live-payment activation in later phases.
-- Owner review and acceptance or rejection of the P2 synthetic walkthrough and the P3 deterministic synthetic lab.
+- Owner review and acceptance or rejection of the unified synthetic walkthrough and the P3 deterministic synthetic lab.
 - Decision whether to open the full P3 gate with an approved AI provider, data-rights review, measured accuracy and real-document privacy/retention design.

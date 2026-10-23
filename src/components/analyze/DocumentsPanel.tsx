@@ -18,6 +18,7 @@ import {
   EvidenceList,
   PartyBadge,
   PricingBasisBadge,
+  RejectionList,
   SectionCard,
   documentLabel,
 } from "./shared";
@@ -503,14 +504,18 @@ function DocumentCard({
 export function DocumentsPanel({ analysis, onCorrect, onResetDocument }: DocumentsPanelProps) {
   if (analysis.documents.length === 0) {
     return (
-      <SectionCard title="Extracted documents">
-        <p className="empty-state">No documents were accepted for extraction.</p>
-      </SectionCard>
+      <div className="view-stack">
+        <RejectionList rejections={analysis.rejections} />
+        <SectionCard title="Extracted documents">
+          <p className="empty-state">No documents were accepted for extraction.</p>
+        </SectionCard>
+      </div>
     );
   }
 
   return (
     <div className="view-stack">
+      <RejectionList rejections={analysis.rejections} />
       <SectionCard
         title="Extracted fields and document register"
         description="Every field carries a page and line reference. Correct a field only when the extraction is wrong; the correction is logged separately from the source evidence."

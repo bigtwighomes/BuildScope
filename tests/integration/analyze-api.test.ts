@@ -39,7 +39,9 @@ describe("POST /api/analyze/sample", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(analysis.documents).toHaveLength(3);
     expect(analysis.metrics.findings).toBe(21);
-    expect(analysis.synthetic).toBe(true);
+    expect(analysis.provenance.dataClassification).toBe("bundled-synthetic-fixture");
+    expect(analysis.provenance.origin).toBe("sample");
+    expect(analysis.location).toBe("Cedar Ridge, fictional sample");
   });
 });
 

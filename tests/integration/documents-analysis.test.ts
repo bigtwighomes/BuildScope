@@ -50,6 +50,21 @@ describe("synthetic ground-truth arithmetic", () => {
     expect(sample.arithmetic[2]?.statedTotalCents).toBe(50_816_240);
     expect(sample.arithmetic[2]?.totalDeltaCents).toBe(250_000);
     expect(sample.arithmetic.every((check) => check.lineExtensionIssues.length === 0)).toBe(true);
+
+    const northlineDocument = sample.documents[0];
+    if (!northlineDocument) throw new Error("Missing Northline fixture");
+    const ambiguousTax = buildAnalysis(
+      [
+        {
+          ...northlineDocument,
+          tax: { ...northlineDocument.tax, includedInTotal: null },
+        },
+      ],
+      { projectType: "new_home" },
+    );
+
+    expect(ambiguousTax.arithmetic[0]?.status).toBe("insufficient_data");
+    expect(ambiguousTax.arithmetic[0]?.expectedTotalCents).toBeNull();
   });
 
   it("reports metrics without hiding rejected or unreadable inputs", () => {

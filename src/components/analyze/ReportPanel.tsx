@@ -3,6 +3,7 @@
 import type { Analysis } from "@/lib/documents/types";
 import {
   PRICING_BASIS_LABELS,
+  PROJECT_TYPE_LABELS,
   RESPONSIBILITY_ROLE_LABELS,
   SCOPE_CATEGORY_LABELS,
 } from "@/lib/documents/types";
@@ -14,10 +15,17 @@ function formatTimestamp(value: string): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-US");
 }
 
-export function ReportPanel({ analysis }: { readonly analysis: Analysis }) {
+export function ReportPanel({
+  analysis,
+  projectName: suppliedProjectName,
+}: {
+  readonly analysis: Analysis;
+  readonly projectName?: string;
+}) {
   const projectName =
-    analysis.documents.find((document) => document.projectName.value)?.projectName.value ??
-    "Synthetic document comparison";
+    suppliedProjectName?.trim() ||
+    analysis.documents.find((document) => document.projectName.value)?.projectName.value ||
+    "Untitled proposal comparison";
 
   return (
     <div className="view-stack">
@@ -33,17 +41,26 @@ export function ReportPanel({ analysis }: { readonly analysis: Analysis }) {
 
       <article className="report" id="analysis-report">
         <header className="report-cover">
-          <p className="report-kicker">BuildScope Check · evidence-linked comparison</p>
+          <p className="report-kicker">BuildScope Check - evidence-linked comparison</p>
           <h1>{projectName}</h1>
           <p className="report-subtitle">
-            {analysis.projectType === "new_home" ? "New home" : "Renovation"} ·{" "}
-            {analysis.analysisId}
+            {PROJECT_TYPE_LABELS[analysis.projectType]} - {analysis.analysisId}
           </p>
+          {analysis.location.trim() ? (
+            <p className="report-subtitle">Unverified project location: {analysis.location}</p>
+          ) : null}
           <p className="report-subtitle">Generated {formatTimestamp(analysis.generatedAt)}</p>
           <p className="report-notice">
-            <strong>Synthetic test report.</strong> All documents, parties, amounts and findings are
-            fictional fixtures. This is not a real quote, contract, legal opinion or professional
-            cost estimate. No AI extraction, OCR, paid cost data or live payments were used.
+            <strong>
+              {analysis.provenance.dataClassification === "bundled-synthetic-fixture"
+                ? "Synthetic example report."
+                : "User-supplied document report."}
+            </strong>{" "}
+            {analysis.provenance.dataClassification === "bundled-synthetic-fixture"
+              ? "All documents, parties and amounts are fictional fixtures."
+              : "The uploaded documents and extracted statements are unverified."}{" "}
+            This is not a real quote, contract, legal opinion or professional cost estimate. No AI
+            extraction, OCR, paid cost data or live payments were used.
           </p>
         </header>
 
@@ -295,7 +312,13 @@ export function ReportPanel({ analysis }: { readonly analysis: Analysis }) {
                           ? "Not stated"
                           : formatMoneyCents(document.statedTotalCents.value)}
                       </td>
-                      <td>{formatMoneyCents(check?.lineItemSubtotalCents ?? 0)}</td>
+                      <td>
+                        {check
+                          ? check.lineItemCount === 0
+                            ? "No line items"
+                            : formatMoneyCents(check.lineItemSubtotalCents)
+                          : "Not available"}
+                      </td>
                       <td>
                         {document.tax.amountCents === null
                           ? "Not stated"
@@ -329,7 +352,88 @@ export function ReportPanel({ analysis }: { readonly analysis: Analysis }) {
         </section>
 
         <section className="report-section">
-          <h2>6. Limitations</h2>
+          <h2>6. Change and revision register</h2>
+          {analysis.changes.length === 0 ? (
+            <p>No customer-reported change requests were recorded for this review.</p>
+          ) : (
+            <div
+              className="table-wrap"
+              tabIndex={0}
+              role="region"
+              aria-label="Report change register"
+            >
+              <table className="report-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Change</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Documented change</th>
+                    <th scope="col">Schedule impact</th>
+                    <th scope="col">Unknown exposure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.changes.map((change) => (
+                    <tr key={change.id}>
+                      <th scope="row">
+                        {change.title}
+                        <span className="th-sub">{change.description}</span>
+                      </th>
+                      <td>{change.status}</td>
+                      <td>
+                        {change.documentedDeltaCents === null
+                          ? "Not priced"
+                          : formatMoneyCents(change.documentedDeltaCents)}
+                      </td>
+                      <td>{change.scheduleImpact || "Not stated"}</td>
+                      <td>{change.unknownExposure}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="report-footnote">
+            Change entries are customer-reported working notes. They are not extracted contract
+            terms, approved change orders or a legal determination.
+          </p>
+        </section>
+
+        <section className="report-section">
+          <h2>7. Site and project screening questions</h2>
+          <p>
+            No screening lookup was performed. These are open questions, not findings about the
+            property or any contractor.
+          </p>
+          <ul>
+            {analysis.risks.map((risk) => (
+              <li key={risk.id}>
+                <strong>{risk.topic}:</strong> {risk.observation} Status:{" "}
+                {risk.status.replaceAll("_", " ")}.
+                <br />
+                Source:{" "}
+                {risk.sourceUrl ? (
+                  <a href={risk.sourceUrl} target="_blank" rel="noreferrer">
+                    {risk.sourceName}
+                  </a>
+                ) : (
+                  risk.sourceName
+                )}
+                . Version or date: {risk.versionOrDate}. Retrieved:{" "}
+                {risk.retrievedAt ?? "Not retrieved"}.
+                <br />
+                Resolution: {risk.resolution}
+                <br />
+                Limitation: {risk.limitations}
+                <br />
+                Next step: {risk.customerAction}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="report-section">
+          <h2>8. Limitations</h2>
           <ul>
             {analysis.limitations.map((limitation) => (
               <li key={limitation}>{limitation}</li>
@@ -339,9 +443,9 @@ export function ReportPanel({ analysis }: { readonly analysis: Analysis }) {
 
         <footer className="report-footnote">
           <p>
-            BuildScope Check synthetic report · {analysis.analysisId} ·{" "}
-            {analysis.metrics.evidenceReferences} evidence references · {analysis.metrics.findings}{" "}
-            findings · {analysis.metrics.suspiciousSpans} ignored instruction-like spans.
+            BuildScope Check report - {analysis.analysisId} - {analysis.metrics.evidenceReferences}{" "}
+            evidence references - {analysis.metrics.findings} findings -{" "}
+            {analysis.metrics.suspiciousSpans} ignored instruction-like spans.
           </p>
         </footer>
       </article>

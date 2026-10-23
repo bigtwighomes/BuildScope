@@ -1,14 +1,29 @@
 import Link from "next/link";
-import { formatUsd, summarizeCosts } from "@/lib/demo/analysis";
-import { demoProject } from "@/lib/demo/project";
 
-const previewRows = demoProject.scopeRows.filter((row) =>
-  ["log-package", "freight-unloading", "hvac"].includes(row.id),
-);
+const STEPS = [
+  {
+    title: "Set up the project",
+    body: "Choose a whole-home, materials-package or bathroom review and add an optional location for the screening checklist.",
+  },
+  {
+    title: "Add the proposals",
+    body: "Upload up to three text-based PDFs. BuildScope validates every file and names anything it rejects.",
+  },
+  {
+    title: "Review the extraction",
+    body: "Check fields, line items, totals and scope categories. Corrections stay marked and keep their source evidence.",
+  },
+  {
+    title: "Compare and question",
+    body: "See scope, responsibility, costs, change exposure and open questions side by side without treating missing scope as zero.",
+  },
+  {
+    title: "Print or save the report",
+    body: "Take a clear evidence-linked report and a prioritized question list to your contractor conversation.",
+  },
+];
 
 export default function HomePage() {
-  const costs = summarizeCosts(demoProject);
-
   return (
     <main className="landing">
       <header className="landing-nav">
@@ -18,15 +33,15 @@ export default function HomePage() {
           </span>
           <span>
             <strong>BuildScope Check</strong>
-            <small>Quote intelligence</small>
+            <small>Proposal review</small>
           </span>
         </span>
         <nav aria-label="Primary">
-          <Link className="button button-secondary button-small" href="/demo">
-            Open the P2 demo
+          <Link className="button button-secondary button-small" href="/analyze?sample=1">
+            See a synthetic example
           </Link>
           <Link className="button button-primary button-small" href="/analyze">
-            Try the P3 document lab
+            Start a review
           </Link>
         </nav>
       </header>
@@ -37,97 +52,44 @@ export default function HomePage() {
         <p className="lede">
           A materials-only kit, an installed fixed-price bid and a cost-plus estimate cannot be
           compared by their totals. BuildScope turns supplied proposals into scope status,
-          responsibility assignments, evidence spans, change-order exposure and prioritized
-          questions.
+          responsibility assignments, evidence spans, change exposure and prioritized questions.
         </p>
         <p className="lede">
-          The P3 lab now validates and extracts text-based PDFs deterministically, then links each
-          finding to the document, page, section and quoted span. Corrections stay visible, and
-          unknown scope is never treated as zero.
+          The review is deterministic and five steps long. Every extracted claim links to the
+          document, page, section and quoted span. Corrections stay visible, and unknown or unpriced
+          scope is never treated as zero.
         </p>
         <div className="button-row">
           <Link className="button button-primary" href="/analyze">
-            Analyze synthetic PDFs
+            Start a proposal review
           </Link>
-          <Link className="button button-secondary" href="/demo">
-            Explore the P2 demo
+          <Link className="button button-secondary" href="/analyze?sample=1">
+            Explore the synthetic example
           </Link>
         </div>
         <p className="hero-note" role="note">
-          <strong>This is a synthetic P2/P3 lab.</strong> Upload text-based PDFs for local testing
-          only. There is no OCR, AI extraction, file persistence, live payment or licensed cost
-          data. Do not upload confidential documents, and treat nothing here as a real quote.
+          <strong>Local review tool.</strong> Upload text-based PDFs for review only. There is no
+          OCR, AI extraction, file persistence, live payment or licensed cost data. Do not upload
+          confidential documents, and treat nothing here as a real quote or professional advice.
         </p>
       </section>
 
-      <section className="landing-preview" aria-labelledby="preview-title">
+      <section className="landing-preview" aria-labelledby="steps-title">
         <div className="landing-preview-head">
           <div>
-            <p className="eyebrow">P2 demo fixture preview</p>
-            <h2 id="preview-title">{demoProject.name}</h2>
+            <p className="eyebrow">Five steps</p>
+            <h2 id="steps-title">From PDFs to a clearer conversation</h2>
           </div>
-          <span className="tag tag-warning">All data synthetic</span>
+          <span className="tag tag-warning">Synthetic example available</span>
         </div>
-
-        <div className="preview-grid">
-          {demoProject.documents.map((document) => {
-            const summary = costs.find((entry) => entry.proposalId === document.id);
-            return (
-              <article className="preview-card" key={document.id}>
-                <p className="proposal-basis">{document.pricingBasis.replace("_", " ")}</p>
-                <h3>{document.bidder}</h3>
-                <p className="preview-amount">{formatUsd(document.headlineAmount)}</p>
-                <p className="preview-note">{document.comparabilityNote}</p>
-                <p className="preview-meta">
-                  {summary
-                    ? `${formatUsd(summary.allowancesTotal)} allowances inside total`
-                    : "No cost rows"}
-                </p>
-              </article>
-            );
-          })}
-        </div>
-
-        <div
-          className="table-wrap"
-          role="region"
-          aria-label="Scrollable demo scope preview table"
-          tabIndex={0}
-        >
-          <table className="scope-table preview-table">
-            <caption className="visually-hidden">
-              Preview of three scope classifications from the synthetic fixture
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Scope area</th>
-                {demoProject.documents.map((document) => (
-                  <th scope="col" key={document.id}>
-                    {document.bidder}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {previewRows.map((row) => (
-                <tr key={row.id}>
-                  <th scope="row">{row.area}</th>
-                  {demoProject.documents.map((document) => {
-                    const cell = row.cells[document.id];
-                    return (
-                      <td key={document.id}>
-                        <span
-                          className={`badge badge-scope-${cell?.status.toLowerCase() ?? "not_specified"}`}
-                        >
-                          {cell?.status.replaceAll("_", " ").toLowerCase() ?? "not applicable"}
-                        </span>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="landing-pillars landing-steps">
+          {STEPS.map((step, index) => (
+            <article key={step.title}>
+              <p className="step-number">Step {index + 1}</p>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -142,15 +104,15 @@ export default function HomePage() {
         <article>
           <h3>Unknown is never zero</h3>
           <p>
-            Known costs, planning ranges and unpriced conditions are shown in separate sections.
-            Missing scope is exposure, not a silent omission.
+            Stated costs, excluded scope and unpriced conditions stay separate. Missing scope is
+            exposure, not a silent omission.
           </p>
         </article>
         <article>
           <h3>Changes stay honest</h3>
           <p>
-            Requested, quoted, approved and rejected changes are distinguished. Baselines are
-            preserved, and unknown change-order fees are labeled as unknown.
+            Requested, quoted, approved and rejected changes are distinguished. Baselines are kept,
+            and unknown fee or schedule exposure is labeled as unknown.
           </p>
         </article>
         <article>
@@ -167,13 +129,13 @@ export default function HomePage() {
         <ul>
           <li>No OCR or AI extraction; scanned and image-only PDFs are rejected.</li>
           <li>No document storage, accounts, checkout or paid report delivery.</li>
-          <li>No live Census, FEMA, USGS, USITC or BLS integration.</li>
+          <li>No live Census, FEMA, USGS, USITC or BLS integration or screening lookup.</li>
           <li>No Craftsman, RSMeans or other licensed cost data.</li>
           <li>No legal, engineering, inspection or code-compliance advice.</li>
         </ul>
         <p className="pricing-hypothesis">
           <strong>Pilot pricing hypothesis (not active):</strong> a one-time core report in the
-          $49–$79 range, with any licensed-cost-data report tested later. No payment can be made in
+          $49-$79 range, with any licensed-cost-data report tested later. No payment can be made in
           this build.
         </p>
       </section>

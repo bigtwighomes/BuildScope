@@ -4,8 +4,11 @@ import path from "node:path";
 import { buildAnalysis } from "./analysis";
 import { PdfExtractionError, extractPdfPages, looksLikePdf } from "./pdf";
 import { parseDocument } from "./parse";
+import { buildRiskObservations } from "./risk";
 import {
   type AnalysisLimits,
+  type AnalysisOrigin,
+  type ChangeReview,
   type DocumentRejection,
   type ExtractedDocument,
   type ProjectType,
@@ -28,6 +31,9 @@ export interface UploadedFile {
 export interface AnalyzeUploadsOptions {
   readonly projectType: ProjectType;
   readonly limits?: AnalysisLimits;
+  readonly origin?: AnalysisOrigin;
+  readonly location?: string;
+  readonly changes?: readonly ChangeReview[];
 }
 
 export class IntakeError extends Error {
@@ -157,13 +163,24 @@ export async function analyzeUploads(
     hashes.push(hash);
   }
 
+  const origin = options.origin ?? "upload";
   const analysis = buildAnalysis(accepted, {
     projectType: options.projectType,
+    location: options.location ?? "",
     rejections,
+    changes: options.changes,
+    risks: buildRiskObservations(options.projectType, options.location ?? ""),
+    provenance: {
+      origin,
+      processing: "deterministic",
+      dataClassification:
+        origin === "sample" ? "bundled-synthetic-fixture" : "user-upload-unverified",
+      costDataMode: "OFF",
+    },
     analysisId:
       hashes.length === 0
-        ? "SYN-EMPTY"
-        : `SYN-${createHash("sha256")
+        ? `${origin === "sample" ? "SAMPLE" : "DOC"}-EMPTY`
+        : `${origin === "sample" ? "SAMPLE" : "DOC"}-${createHash("sha256")
             .update(`${options.projectType}:${hashes.join(":")}`)
             .digest("hex")
             .slice(0, 10)
@@ -180,7 +197,7 @@ export const SYNTHETIC_SAMPLE_FILES = [
 ] as const;
 
 export async function readSyntheticSampleFiles(): Promise<UploadedFile[]> {
-  const directory = path.join(process.cwd(), "tests", "fixtures", "synthetic");
+  const directory = path.join(process.cwd(), "fixtures", "samples");
   return Promise.all(
     SYNTHETIC_SAMPLE_FILES.map(async (fileName) => ({
       fileName,

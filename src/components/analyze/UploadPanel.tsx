@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useState } from "react";
-import type { Analysis, ProjectType } from "@/lib/documents/types";
+import { PROJECT_TYPE_LABELS, type Analysis, type ProjectType } from "@/lib/documents/types";
 
 interface UploadPanelProps {
+  readonly projectType: ProjectType;
   readonly hasAnalysis: boolean;
   readonly onAnalysis: (analysis: Analysis) => void;
 }
@@ -14,10 +15,9 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export function UploadPanel({ hasAnalysis, onAnalysis }: UploadPanelProps) {
+export function UploadPanel({ projectType, hasAnalysis, onAnalysis }: UploadPanelProps) {
   const inputId = useId();
   const [files, setFiles] = useState<File[]>([]);
-  const [projectType, setProjectType] = useState<ProjectType>("new_home");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -116,7 +116,7 @@ export function UploadPanel({ hasAnalysis, onAnalysis }: UploadPanelProps) {
       }
       onAnalysis(payload);
       setFiles([]);
-      setStatus("Synthetic sample loaded. All content is fictional test data.");
+      setStatus("Synthetic example loaded. All content is fictional test data.");
     } catch {
       setError("The synthetic sample could not be loaded.");
       setStatus(null);
@@ -129,16 +129,16 @@ export function UploadPanel({ hasAnalysis, onAnalysis }: UploadPanelProps) {
     <section className="card upload-card" aria-labelledby="upload-title">
       <div className="card-head">
         <div>
-          <p className="eyebrow">Deterministic document intake</p>
+          <p className="eyebrow">Step 2 of 5</p>
           <h2 id="upload-title">
-            {hasAnalysis ? "Analyze different documents" : "Upload text-based PDF proposals"}
+            {hasAnalysis ? "Replace the documents" : "Add two or three proposals"}
           </h2>
           <p className="card-sub">
-            Each document is validated, extracted and compared in memory. No AI extraction, OCR,
-            paid cost data or file storage is used.
+            Upload up to three text-based PDFs. Each document is validated, extracted and compared
+            in memory. No AI extraction, OCR, paid cost data or file storage is used.
           </p>
         </div>
-        <span className="tag tag-muted">Cost data OFF</span>
+        <span className="tag tag-muted">{PROJECT_TYPE_LABELS[projectType]}</span>
       </div>
       <div className="card-body">
         <div className="upload-grid">
@@ -187,19 +187,13 @@ export function UploadPanel({ hasAnalysis, onAnalysis }: UploadPanelProps) {
           </div>
 
           <div className="upload-actions">
-            <label className="field">
+            <div className="upload-summary">
               <span className="field-label">Project type</span>
-              <select
-                value={projectType}
-                onChange={(event) => setProjectType(event.target.value as ProjectType)}
-              >
-                <option value="new_home">New home</option>
-                <option value="renovation">Renovation</option>
-              </select>
+              <strong>{PROJECT_TYPE_LABELS[projectType]}</strong>
               <span className="field-note">
-                Used only when the document does not state a project type.
+                Used when the documents do not state a project type. Change it in step 1.
               </span>
-            </label>
+            </div>
             <div className="button-row">
               <button
                 type="button"
@@ -217,11 +211,12 @@ export function UploadPanel({ hasAnalysis, onAnalysis }: UploadPanelProps) {
                 disabled={busy}
                 onClick={loadSample}
               >
-                Load synthetic sample
+                Use synthetic example
               </button>
             </div>
             <p className="upload-hint" role="note">
               Files stay in memory for this request only. Do not upload confidential documents.
+              Every result requires your review.
             </p>
           </div>
         </div>

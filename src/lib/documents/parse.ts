@@ -74,9 +74,15 @@ const PROJECT_TYPE_ALIASES: Record<string, ProjectType> = {
   "new home": "new_home",
   new_home: "new_home",
   newhome: "new_home",
-  renovation: "renovation",
-  remodel: "renovation",
-  "bathroom renovation": "renovation",
+  "materials package": "materials_package",
+  materials_package: "materials_package",
+  "materials only": "materials_package",
+  "kit package": "materials_package",
+  "bathroom renovation": "bathroom_renovation",
+  bathroom_renovation: "bathroom_renovation",
+  "bathroom remodel": "bathroom_renovation",
+  renovation: "bathroom_renovation",
+  remodel: "bathroom_renovation",
 };
 
 const PRICING_BASIS_ALIASES: Record<string, PricingBasis> = {
@@ -97,25 +103,35 @@ const PRICING_BASIS_ALIASES: Record<string, PricingBasis> = {
 };
 
 const CATEGORY_PATTERNS: Array<[ScopeCategory, RegExp]> = [
-  ["sitework", /sitework|excavation|grading|site prep|erosion/],
+  ["survey_engineering", /survey|engineering|architect|structural design|plan set/],
+  ["permits", /permit|plan review|building department/],
+  ["demolition", /demolition|demo\b|tear out|remove existing|removal of existing/],
+  ["retaining_drainage", /retaining wall|drainage|drain tile|french drain|erosion control/],
+  ["sitework", /sitework|excavation|grading|site prep|backfill/],
   ["foundation", /foundation|footing|basement|slab|crawl space/],
   [
     "structure",
     /log structure|log wall package|log package|erection|framing|structural|beam|timber frame/,
   ],
-  ["roofing", /roofing|shingle|standing seam|metal roof|roof/],
+  ["roofing", /\broof(?:ing)?\b|shingle|standing seam|metal roof/],
+  ["exterior", /siding|cladding|exterior trim|soffit|fascia|gutter/],
   ["windows", /window|exterior door|glazing/],
-  ["plumbing", /plumbing|water heater|fixture rough|drain/],
-  ["electrical", /electrical|electric service|wiring|panel/],
-  ["hvac", /heating|hvac|ventilation|mini split|furnace/],
-  ["insulation", /insulation|drywall|gypsum/],
-  ["finishes", /interior finish|interior trim|paint|flooring|door and trim|cabinetry/],
+  ["plumbing", /plumbing|water heater|fixture rough|drain|supply line|relocat/],
+  ["ventilation", /exhaust fan|bath fan|bathroom ventilation|ventilation fan/],
+  ["electrical", /electrical|electric service|wiring|panel|outlet|lighting circuit/],
+  ["hvac", /heating|hvac|mini split|furnace|air condition/],
+  ["insulation", /insulation/],
+  ["waterproofing", /waterproof|membrane|shower pan|wet area|cement board/],
+  ["drywall", /drywall|gypsum|plaster/],
+  ["tile", /tile|stone|grout/],
+  ["vanity", /vanity|cabinetry|cabinet/],
+  ["finishes", /interior finish|interior trim|paint|flooring|door and trim/],
+  ["appliances", /appliance|refrigerator|\brange\b|dishwasher|toilet|sink|faucet|fixture/],
   ["freight", /freight|delivery|shipping|crane|unloading|haul/],
   ["waste", /waste removal|dumpster|debris|final clean/],
-  ["permits", /permit|engineering|plan review|inspection fee/],
-  ["utilities", /septic|well|utility|utilities|power connection/],
+  ["utilities", /septic|\bwell\b|utility|utilities|power connection|water line/],
+  ["inspections", /inspection|testing|air quality|mold test/],
   ["landscaping", /landscap|grading seed|sod|irrigation/],
-  ["appliances", /appliance|refrigerator|\brange\b|dishwasher/],
 ];
 
 const RESPONSIBILITY_ALIASES: Record<string, ResponsibilityRole> = {
@@ -143,6 +159,16 @@ const SPECIFICATION_KEYS: Record<string, SpecificationValue["key"]> = {
   "window specification": "window_specification",
   "foundation details": "foundation",
   foundation: "foundation",
+  "tile specification": "tile",
+  "tile grade": "tile",
+  waterproofing: "waterproofing",
+  "waterproofing method": "waterproofing",
+  "vanity specification": "vanity",
+  vanity: "vanity",
+  "ventilation specification": "ventilation",
+  "exhaust ventilation": "ventilation",
+  "fixture specification": "fixtures",
+  fixtures: "fixtures",
 };
 
 const UNCATEGORIZED_CATEGORY: ScopeCategory = "uncategorized";

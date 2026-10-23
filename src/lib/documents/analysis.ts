@@ -1,7 +1,9 @@
 import {
   type Analysis,
   type AnalysisFinding,
+  type AnalysisProvenance,
   type ArithmeticCheck,
+  type ChangeReview,
   type ComparisonCell,
   type ComparisonRow,
   type DocumentCorrections,
@@ -9,6 +11,7 @@ import {
   type ExtractedDocument,
   type ProjectType,
   type ResponsibilityRow,
+  type RiskObservation,
   type ScopeCategory,
   type ScopeStatus,
   type SourceEvidence,
@@ -20,34 +23,19 @@ import {
 } from "./types";
 import { applyDocumentCorrection, countEvidence } from "./parse";
 import { extendCents, formatMoneyCents, parseQuantityMilli, percentOfCents } from "./money";
+import { scopeCategoriesForProject } from "./scope";
 
 export interface BuildAnalysisOptions {
   readonly projectType: ProjectType;
+  readonly location?: string;
   readonly corrections?: DocumentCorrections;
   readonly rejections?: readonly DocumentRejection[];
   readonly analysisId?: string;
   readonly generatedAt?: string;
+  readonly provenance?: AnalysisProvenance;
+  readonly changes?: readonly ChangeReview[];
+  readonly risks?: readonly RiskObservation[];
 }
-
-const COMPARISON_ORDER: ScopeCategory[] = [
-  "sitework",
-  "foundation",
-  "structure",
-  "roofing",
-  "windows",
-  "plumbing",
-  "electrical",
-  "hvac",
-  "insulation",
-  "finishes",
-  "freight",
-  "waste",
-  "permits",
-  "utilities",
-  "landscaping",
-  "appliances",
-  "installation_labor",
-];
 
 const SPEC_CATEGORY: Record<SpecificationValue["key"], ScopeCategory> = {
   insulation: "insulation",
@@ -55,6 +43,11 @@ const SPEC_CATEGORY: Record<SpecificationValue["key"], ScopeCategory> = {
   log_species: "structure",
   window_specification: "windows",
   foundation: "foundation",
+  tile: "tile",
+  waterproofing: "waterproofing",
+  vanity: "vanity",
+  ventilation: "ventilation",
+  fixtures: "appliances",
 };
 
 const SPEC_LABELS: Record<SpecificationValue["key"], string> = {
@@ -63,7 +56,25 @@ const SPEC_LABELS: Record<SpecificationValue["key"], string> = {
   log_species: "log species",
   window_specification: "window",
   foundation: "foundation",
+  tile: "tile",
+  waterproofing: "waterproofing",
+  vanity: "vanity",
+  ventilation: "ventilation",
+  fixtures: "fixture",
 };
+
+const SPEC_KEYS: SpecificationValue["key"][] = [
+  "insulation",
+  "roofing_material",
+  "log_species",
+  "window_specification",
+  "foundation",
+  "tile",
+  "waterproofing",
+  "vanity",
+  "ventilation",
+  "fixtures",
+];
 
 const SEVERITY_ORDER: Record<AnalysisFinding["severity"], number> = {
   security: 0,
@@ -118,9 +129,9 @@ function computeArithmetic(document: ExtractedDocument): ArithmeticCheck {
   const rate = taxRateBasisPoints(document);
   const taxExpected =
     rate !== null && document.lineItems.length > 0 ? percentOfCents(subtotal, rate) : null;
-  const taxIncluded = document.tax.includedInTotal === true;
+  const taxIncluded = document.tax.includedInTotal;
   const expectedTotal =
-    document.lineItems.length === 0
+    document.lineItems.length === 0 || taxIncluded === null
       ? null
       : subtotal + (taxIncluded ? (taxExpected ?? document.tax.amountCents ?? 0) : 0);
   const statedTotal = document.statedTotalCents.value;
@@ -187,24 +198,24 @@ function normalizedSpecification(key: SpecificationValue["key"], value: string):
         : "supplied";
     return `${supplier}_${glazing}_${frame}`;
   }
-  const inches = lower.match(/(\d+)\s*(?:-?\s*inch|in\b)/);
-  const foundation =
-    ["basement", "slab", "crawl"].find((item) => lower.includes(item)) ?? "unknown";
-  return `${inches?.[1] ?? "unknown"}in_${foundation}`;
+  if (key === "foundation") {
+    const inches = lower.match(/(\d+)\s*(?:-?\s*inch|in\b)/);
+    const foundation =
+      ["basement", "slab", "crawl"].find((item) => lower.includes(item)) ?? "unknown";
+    return `${inches?.[1] ?? "unknown"}in_${foundation}`;
+  }
+  return lower.replace(/\s+/g, " ").trim();
 }
 
-function buildComparison(documents: readonly ExtractedDocument[]): {
+function buildComparison(
+  documents: readonly ExtractedDocument[],
+  projectType: ProjectType,
+): {
   rows: ComparisonRow[];
   specificationConflicts: Map<SpecificationValue["key"], ExtractedDocument[]>;
 } {
   const specificationConflicts = new Map<SpecificationValue["key"], ExtractedDocument[]>();
-  const keys: SpecificationValue["key"][] = [
-    "insulation",
-    "roofing_material",
-    "log_species",
-    "window_specification",
-    "foundation",
-  ];
+  const keys = SPEC_KEYS;
 
   for (const key of keys) {
     const entries = documents
@@ -225,9 +236,17 @@ function buildComparison(documents: readonly ExtractedDocument[]): {
   }
 
   const rows: ComparisonRow[] = [];
+  const observedCategories = documents
+    .flatMap((document) => [
+      ...document.lineItems.map((item) => item.category),
+      ...document.exclusions.map((exclusion) => exclusion.category),
+    ])
+    .filter((category): category is ScopeCategory => category !== "tax");
+  const comparisonOrder = [
+    ...new Set<ScopeCategory>([...scopeCategoriesForProject(projectType), ...observedCategories]),
+  ].filter((category) => category !== "installation_labor" && category !== "uncategorized");
 
-  for (const category of COMPARISON_ORDER) {
-    if (category === "installation_labor") continue;
+  for (const category of comparisonOrder) {
     const cells: Record<string, ComparisonCell> = {};
     const specKey = keys.find(
       (key) => SPEC_CATEGORY[key] === category && specificationConflicts.has(key),
@@ -455,7 +474,7 @@ export function buildAnalysis(
     return correction ? applyDocumentCorrection(document, correction) : document;
   });
   const arithmetic = documents.map(computeArithmetic);
-  const { rows, specificationConflicts } = buildComparison(documents);
+  const { rows, specificationConflicts } = buildComparison(documents, options.projectType);
   const responsibilities = buildResponsibilities(documents);
   const findings: AnalysisFinding[] = [];
 
@@ -1060,24 +1079,38 @@ export function buildAnalysis(
     findingsWithEvidence: severityRanked.filter((finding) => finding.evidence.length > 0).length,
   };
 
+  const provenance: AnalysisProvenance = options.provenance ?? {
+    origin: "upload",
+    processing: "deterministic",
+    dataClassification: "user-upload-unverified",
+    costDataMode: "OFF",
+  };
+  const dataLimitation =
+    provenance.dataClassification === "bundled-synthetic-fixture"
+      ? "Bundled synthetic test documents only. This is not a real bid, contract review or professional cost opinion."
+      : "User-supplied documents are unverified. This is not a real bid, contract review or professional cost opinion.";
+
   return {
-    analysisId: options.analysisId ?? "SYN-LOCAL",
+    analysisId: options.analysisId ?? "LOCAL-ANALYSIS",
     generatedAt: options.generatedAt ?? new Date().toISOString(),
     projectType: options.projectType,
+    location: options.location ?? "",
+    provenance,
     documents,
     rejections: options.rejections ?? [],
     comparisonRows: rows,
     responsibilities,
     arithmetic,
     findings: severityRanked,
+    changes: options.changes ?? [],
+    risks: options.risks ?? [],
     metrics,
     limitations: [
-      "Synthetic test documents only. This is not a real bid, contract review or professional cost opinion.",
+      dataLimitation,
       "Extraction is deterministic and limited to text-based PDFs. Scanned pages are not read with OCR.",
       "Unknown or unpriced scope is never treated as zero. A missing statement is not proof of exclusion.",
       "Amounts are compared as stated. No market pricing, cost database or paid cost data is used.",
       "Confirm scope, licensing, insurance, permits and contract terms with qualified reviewers.",
     ],
-    synthetic: true,
   };
 }

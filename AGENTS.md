@@ -10,6 +10,7 @@ Before any task, read masterprompt.md in full. Treat it as the authoritative req
 - Authoritative specification: `masterprompt.md` v1.0, research baseline October 20, 2026.
 - Recorded master prompt SHA-256 at P0: `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`. If the file differs, stop and ask the owner before proceeding.
 - Active phase and evidence: `docs/STATUS.md`. Authorized next work: `docs/NEXT_ACTIONS.md`.
+- Fresh-clone and recovery procedure: `docs/DISASTER_RECOVERY.md`.
 - Stack: Next.js 16 App Router, React 19, TypeScript 5.9 (strict), CSS with custom properties, Vitest, ESLint flat config. See `docs/DECISIONS.md`.
 
 ## Non-negotiable safety gates
@@ -19,7 +20,7 @@ Before any task, read masterprompt.md in full. Treat it as the authoritative req
 - Payments default to `disabled`. Stripe live charging requires explicit owner approval and `BUILDSCOPE_LIVE_PAYMENTS_APPROVED=true`.
 - Use synthetic fixtures unless the owner provides explicit permission and handling instructions for real documents.
 - Never commit secrets, credentials, customer documents or proprietary cost data. `.env.example` contains placeholders only.
-- Do not push to remotes, deploy, purchase services, change billing, contact vendors or modify external accounts without explicit approval.
+- Routine non-destructive commits and pushes to `bigtwighomes/BuildScope` are authorized as development backups. Do not force-push, rewrite history, deploy, purchase services, change billing, contact vendors or modify external accounts without explicit approval.
 - Do not run `npx rea-agents setup` without approval. Do not send the Craftsman licensing inquiry without approval.
 - Unknown and unpriced scope is never zero. Do not fabricate costs, provenance, integrations, customers, test results or citations.
 
@@ -41,7 +42,13 @@ Run all checks with:
 npm run verify
 ```
 
-Record commands, expected/actual results and unverified items in `docs/STATUS.md`, `docs/tests/TEST_RESULTS.md`, `docs/REQUIREMENTS_TRACEABILITY.md` and `docs/NEXT_ACTIONS.md`.
+Run the Windows/Edge production browser suite separately:
+
+```powershell
+npm run verify:browser
+```
+
+The harness builds and starts a production server unless `BUILDSCOPE_BASE_URL` is set. Record commands, expected/actual results and unverified items in `docs/STATUS.md`, `docs/tests/TEST_RESULTS.md`, `docs/REQUIREMENTS_TRACEABILITY.md` and `docs/NEXT_ACTIONS.md`.
 
 ## Conventions
 

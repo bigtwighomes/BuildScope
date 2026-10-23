@@ -1,5 +1,11 @@
-export const PROJECT_TYPES = ["new_home", "renovation"] as const;
+export const PROJECT_TYPES = ["new_home", "materials_package", "bathroom_renovation"] as const;
 export type ProjectType = (typeof PROJECT_TYPES)[number];
+
+export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  new_home: "New home",
+  materials_package: "Materials package or kit",
+  bathroom_renovation: "Bathroom renovation",
+};
 
 export const PRICING_BASES = [
   "fixed_price",
@@ -22,44 +28,64 @@ export const SCOPE_STATUSES = [
 export type ScopeStatus = (typeof SCOPE_STATUSES)[number];
 
 export const SCOPE_CATEGORIES = [
+  "survey_engineering",
+  "permits",
+  "demolition",
   "sitework",
+  "retaining_drainage",
   "foundation",
   "structure",
   "roofing",
+  "exterior",
   "windows",
   "plumbing",
   "electrical",
   "hvac",
   "insulation",
+  "drywall",
+  "waterproofing",
+  "tile",
+  "vanity",
+  "ventilation",
   "finishes",
+  "appliances",
+  "utilities",
+  "inspections",
   "freight",
   "waste",
-  "permits",
-  "utilities",
   "landscaping",
-  "appliances",
   "installation_labor",
   "uncategorized",
 ] as const;
 export type ScopeCategory = (typeof SCOPE_CATEGORIES)[number];
 
 export const SCOPE_CATEGORY_LABELS: Record<ScopeCategory, string> = {
+  survey_engineering: "Survey and engineering",
+  permits: "Permits and inspections",
+  demolition: "Demolition and removal",
   sitework: "Sitework and excavation",
+  retaining_drainage: "Retaining walls and drainage",
   foundation: "Foundation system",
-  structure: "Log structure and erection",
+  structure: "Structure and framing",
   roofing: "Roofing",
+  exterior: "Exterior cladding and trim",
   windows: "Windows and exterior doors",
-  plumbing: "Plumbing",
+  plumbing: "Plumbing and plumbing changes",
   electrical: "Electrical",
-  hvac: "Heating and ventilation",
-  insulation: "Insulation and drywall",
+  hvac: "Heating, cooling and ventilation",
+  insulation: "Insulation",
+  drywall: "Drywall and plaster",
+  waterproofing: "Wet-area waterproofing",
+  tile: "Tile and stone",
+  vanity: "Vanity and cabinetry",
+  ventilation: "Bathroom ventilation",
   finishes: "Interior finishes",
+  appliances: "Appliances and fixtures",
+  utilities: "Water, septic and utility connections",
+  inspections: "Inspections and testing",
   freight: "Freight, crane and unloading",
   waste: "Waste removal and final clean",
-  permits: "Permits and engineering",
-  utilities: "Septic and well site utilities",
   landscaping: "Landscaping",
-  appliances: "Appliances",
   installation_labor: "Installation labor",
   uncategorized: "Uncategorized line items",
 };
@@ -205,9 +231,22 @@ export interface PaymentInfo {
   readonly scheduleEvidence?: SourceEvidence;
 }
 
+export const SPECIFICATION_KEYS = [
+  "insulation",
+  "roofing_material",
+  "log_species",
+  "window_specification",
+  "foundation",
+  "tile",
+  "waterproofing",
+  "vanity",
+  "ventilation",
+  "fixtures",
+] as const;
+export type SpecificationKey = (typeof SPECIFICATION_KEYS)[number];
+
 export interface SpecificationValue {
-  readonly key:
-    "insulation" | "roofing_material" | "log_species" | "window_specification" | "foundation";
+  readonly key: SpecificationKey;
   readonly value: string;
   readonly evidence: SourceEvidence;
 }
@@ -343,6 +382,70 @@ export interface AnalysisMetrics {
   readonly findingsWithEvidence: number;
 }
 
+export type AnalysisOrigin = "sample" | "upload";
+
+export interface AnalysisProvenance {
+  readonly origin: AnalysisOrigin;
+  readonly processing: "deterministic";
+  readonly dataClassification: "bundled-synthetic-fixture" | "user-upload-unverified";
+  readonly costDataMode: "OFF";
+}
+
+export const CHANGE_REVIEW_STATUSES = [
+  "DRAFT",
+  "REQUESTED",
+  "QUOTED",
+  "APPROVED",
+  "REJECTED",
+  "UNKNOWN",
+] as const;
+export type ChangeReviewStatus = (typeof CHANGE_REVIEW_STATUSES)[number];
+
+export interface ChangeReview {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly reason:
+    "owner_requested" | "site_condition" | "code_authority" | "supplier" | "contractor" | "unknown";
+  readonly status: ChangeReviewStatus;
+  readonly baselineAmountCents: number | null;
+  readonly additionsCents: number | null;
+  readonly creditsCents: number | null;
+  readonly feePercent: number | null;
+  readonly fixedFeeCents: number | null;
+  readonly documentedDeltaCents: number | null;
+  readonly unknownExposure: string;
+  readonly scheduleImpact: string;
+  readonly createdAt: string;
+}
+
+export const RISK_STATUSES = [
+  "verified_source_statement",
+  "customer_reported",
+  "screening_indicator",
+  "possible_issue",
+  "not_evaluated",
+  "not_found",
+  "service_unavailable",
+  "outside_coverage",
+  "professionally_verified",
+] as const;
+export type RiskStatus = (typeof RISK_STATUSES)[number];
+
+export interface RiskObservation {
+  readonly id: string;
+  readonly topic: string;
+  readonly observation: string;
+  readonly status: RiskStatus;
+  readonly sourceName: string;
+  readonly sourceUrl: string;
+  readonly versionOrDate: string;
+  readonly retrievedAt: string | null;
+  readonly resolution: string;
+  readonly limitations: string;
+  readonly customerAction: string;
+}
+
 export interface DocumentCorrection {
   readonly contractor?: string;
   readonly proposalDate?: string;
@@ -357,15 +460,18 @@ export interface Analysis {
   readonly analysisId: string;
   readonly generatedAt: string;
   readonly projectType: ProjectType;
+  readonly location: string;
+  readonly provenance: AnalysisProvenance;
   readonly documents: readonly ExtractedDocument[];
   readonly rejections: readonly DocumentRejection[];
   readonly comparisonRows: readonly ComparisonRow[];
   readonly responsibilities: readonly ResponsibilityRow[];
   readonly arithmetic: readonly ArithmeticCheck[];
   readonly findings: readonly AnalysisFinding[];
+  readonly changes: readonly ChangeReview[];
+  readonly risks: readonly RiskObservation[];
   readonly metrics: AnalysisMetrics;
   readonly limitations: readonly string[];
-  readonly synthetic: true;
 }
 
 export interface AnalysisLimits {

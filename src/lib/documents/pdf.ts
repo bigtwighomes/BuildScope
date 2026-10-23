@@ -73,8 +73,11 @@ export async function extractPdfPages(
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   let document: Awaited<ReturnType<typeof getDocumentProxy>> | undefined;
+  let timedOut = false;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
+      timedOut = true;
+      if (document) void destroyDocument(document);
       reject(new PdfExtractionError("EXTRACTION_TIMEOUT", "PDF extraction timed out."));
     }, options.timeoutMs);
   });
@@ -85,6 +88,9 @@ export async function extractPdfPages(
         // PDF.js may transfer the underlying buffer to its worker. Copy it so the
         // caller can safely reuse the validated upload bytes.
         document = await getDocumentProxy(new Uint8Array(bytes));
+        if (timedOut) {
+          throw new PdfExtractionError("EXTRACTION_TIMEOUT", "PDF extraction timed out.");
+        }
       } catch (error) {
         throw classifyPdfError(error);
       }

@@ -20,6 +20,44 @@ async function fixture(name: string): Promise<UploadedFile> {
   };
 }
 
+describe("bathroom renovation intake", () => {
+  it("extracts bathroom scopes and keeps missing waterproofing and ventilation explicit", async () => {
+    const [willow, harbor] = await Promise.all([
+      fixture("willow-bath-renovation.pdf"),
+      fixture("harbor-bath-renovation.pdf"),
+    ]);
+    const { analysis } = await analyzeUploads([willow, harbor], {
+      projectType: "bathroom_renovation",
+    });
+
+    expect(analysis.projectType).toBe("bathroom_renovation");
+    expect(analysis.documents).toHaveLength(2);
+    expect(analysis.documents.map((document) => document.statedTotalCents.value)).toEqual([
+      4_095_750, 2_770_000,
+    ]);
+    expect(analysis.comparisonRows.map((row) => row.category)).toContain("waterproofing");
+    expect(analysis.comparisonRows.map((row) => row.category)).toContain("ventilation");
+    const waterproofing = analysis.comparisonRows.find((row) => row.category === "waterproofing");
+    const ventilation = analysis.comparisonRows.find((row) => row.category === "ventilation");
+    expect(waterproofing?.cells["doc-1"]?.status).toBe("INCLUDED");
+    expect(waterproofing?.cells["doc-2"]?.status).toBe("EXCLUDED");
+    expect(ventilation?.cells["doc-1"]?.status).toBe("INCLUDED");
+    expect(ventilation?.cells["doc-2"]?.status).toBe("EXCLUDED");
+    expect(analysis.documents[0]?.specifications.map((spec) => spec.key)).toEqual(
+      expect.arrayContaining(["tile", "waterproofing", "vanity", "ventilation", "fixtures"]),
+    );
+
+    for (const category of ["tile", "vanity", "appliances"]) {
+      const comparison = analysis.comparisonRows.find((row) => row.category === category);
+      expect(comparison?.cells["doc-1"]?.status).toBe("CONFLICTING");
+      expect(comparison?.cells["doc-2"]?.status).toBe("CONFLICTING");
+    }
+    expect(analysis.findings.map((finding) => finding.id)).toEqual(
+      expect.arrayContaining(["spec-tile", "spec-vanity", "spec-fixtures"]),
+    );
+  });
+});
+
 describe("synthetic PDF intake", () => {
   let northline: UploadedFile;
   let cascade: UploadedFile;
@@ -34,6 +72,7 @@ describe("synthetic PDF intake", () => {
     ]);
     const result = await analyzeUploads([northline, cascade, sagebrush], {
       projectType: "new_home",
+      location: "Cedar Ridge, fictional sample",
     });
     sample = result.analysis;
   });
@@ -45,7 +84,9 @@ describe("synthetic PDF intake", () => {
       "sagebrush-construction-cost-plus.pdf",
     ]);
     expect(sample.documents.map((document) => document.pageCount)).toEqual([3, 3, 3]);
-    expect(sample.analysisId).toMatch(/^SYN-[A-F0-9]{10}$/);
+    expect(sample.analysisId).toMatch(/^DOC-[A-F0-9]{10}$/);
+    expect(sample.location).toBe("Cedar Ridge, fictional sample");
+    expect(sample.risks[0]?.observation).toContain("Cedar Ridge, fictional sample");
 
     const second = await readSyntheticSampleFiles();
     const repeated = await analyzeUploads(second, { projectType: "new_home" });
@@ -74,7 +115,7 @@ describe("synthetic PDF intake", () => {
     );
 
     expect(result.analysis.documents).toHaveLength(0);
-    expect(result.analysis.analysisId).toBe("SYN-EMPTY");
+    expect(result.analysis.analysisId).toBe("DOC-EMPTY");
     expect(result.analysis.findings).toHaveLength(0);
     expect(result.rejections.map((rejection) => rejection.code)).toEqual(["NO_TEXT", "ENCRYPTED"]);
     expect(result.rejections.map((rejection) => rejection.fileName)).toEqual([

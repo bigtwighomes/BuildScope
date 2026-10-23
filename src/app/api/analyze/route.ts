@@ -13,26 +13,64 @@ function errorResponse(message: string, status: number): Response {
   return Response.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 }
 
+function tooLargeResponse(): Response {
+  return errorResponse(
+    `The upload is too large. The request limit is ${Math.floor(
+      ANALYSIS_LIMITS.maxRequestBytes / (1024 * 1024),
+    )} MB.`,
+    413,
+  );
+}
+
+async function readBoundedBody(request: Request): Promise<ArrayBuffer> {
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > ANALYSIS_LIMITS.maxRequestBytes) {
+    throw new IntakeError("REQUEST_TOO_LARGE", "The upload is too large.");
+  }
+  if (!request.body) {
+    throw new IntakeError("REQUEST_TOO_LARGE", "The upload body is empty.");
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > ANALYSIS_LIMITS.maxRequestBytes) {
+      await reader.cancel();
+      throw new IntakeError("REQUEST_TOO_LARGE", "The upload is too large.");
+    }
+    chunks.push(value);
+  }
+
+  const mergedBuffer = new ArrayBuffer(total);
+  const merged = new Uint8Array(mergedBuffer);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return mergedBuffer;
+}
+
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("multipart/form-data")) {
     return errorResponse("Send the documents as multipart form data.", 415);
   }
 
-  const declaredLength = Number(request.headers.get("content-length") ?? "0");
-  if (declaredLength > ANALYSIS_LIMITS.maxRequestBytes) {
-    return errorResponse(
-      `The upload is too large. The request limit is ${Math.floor(
-        ANALYSIS_LIMITS.maxRequestBytes / (1024 * 1024),
-      )} MB.`,
-      413,
-    );
-  }
-
   let form: FormData;
   try {
-    form = await request.formData();
-  } catch {
+    const body = await readBoundedBody(request);
+    form = await new Response(body, {
+      headers: { "content-type": contentType },
+    }).formData();
+  } catch (error) {
+    if (error instanceof IntakeError && error.code === "REQUEST_TOO_LARGE") {
+      return tooLargeResponse();
+    }
     return errorResponse("The upload could not be read as form data.", 400);
   }
 
@@ -43,7 +81,7 @@ export async function POST(request: Request) {
       : "new_home";
 
   const entries = [...form.getAll("files"), ...form.getAll("file")];
-  const files = entries.filter((entry): entry is File => entry instanceof File);
+  const files = [...new Set(entries.filter((entry): entry is File => entry instanceof File))];
   if (files.length === 0) {
     return errorResponse("Attach at least one PDF.", 400);
   }

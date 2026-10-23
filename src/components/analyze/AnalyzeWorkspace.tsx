@@ -2,28 +2,56 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Analysis, DocumentCorrection, DocumentCorrections } from "@/lib/documents/types";
 import { buildAnalysis } from "@/lib/documents/analysis";
+import { buildRiskObservations } from "@/lib/documents/risk";
+import type {
+  Analysis,
+  ChangeReview,
+  DocumentCorrection,
+  DocumentCorrections,
+} from "@/lib/documents/types";
+import { PROJECT_TYPE_LABELS } from "@/lib/documents/types";
+import { ChangesPanel } from "./ChangesPanel";
 import { ComparisonPanel } from "./ComparisonPanel";
 import { DocumentsPanel } from "./DocumentsPanel";
 import { FinancialPanel } from "./FinancialPanel";
 import { FindingsPanel } from "./FindingsPanel";
-import { OverviewPanel } from "./OverviewPanel";
+import { ProjectStep, type ProjectSetup } from "./ProjectStep";
 import { ReportPanel } from "./ReportPanel";
 import { ResponsibilitiesPanel } from "./ResponsibilitiesPanel";
+import { RiskPanel } from "./RiskPanel";
 import { UploadPanel } from "./UploadPanel";
 
-const VIEWS = [
-  { id: "overview", label: "Overview" },
-  { id: "documents", label: "Documents" },
-  { id: "comparison", label: "Scope comparison" },
-  { id: "responsibilities", label: "Responsibilities" },
-  { id: "costs", label: "Costs & unknowns" },
-  { id: "findings", label: "Findings & questions" },
-  { id: "report", label: "Report" },
+const STEPS = [
+  { id: "project", label: "Project", hint: "Basics" },
+  { id: "documents", label: "Documents", hint: "Add PDFs" },
+  { id: "review", label: "Review", hint: "Check extraction" },
+  { id: "compare", label: "Compare", hint: "Scope and questions" },
+  { id: "report", label: "Report", hint: "Print or save" },
 ] as const;
 
-type ViewId = (typeof VIEWS)[number]["id"];
+type StepId = (typeof STEPS)[number]["id"];
+
+const COMPARE_VIEWS = [
+  { id: "scope", label: "Scope" },
+  { id: "responsibilities", label: "Responsibilities" },
+  { id: "costs", label: "Costs & unknowns" },
+  { id: "changes", label: "Changes" },
+  { id: "risks", label: "Site questions" },
+  { id: "findings", label: "Questions" },
+] as const;
+
+type CompareViewId = (typeof COMPARE_VIEWS)[number]["id"];
+
+function initialProject(analysis: Analysis | null): ProjectSetup {
+  const documentName =
+    analysis?.documents.find((document) => document.projectName.value)?.projectName.value ?? "";
+  return {
+    name: documentName,
+    location: analysis?.location ?? "",
+    projectType: analysis?.projectType ?? "new_home",
+  };
+}
 
 export function AnalyzeWorkspace({
   initialAnalysis,
@@ -32,24 +60,42 @@ export function AnalyzeWorkspace({
 }) {
   const [base, setBase] = useState<Analysis | null>(initialAnalysis);
   const [corrections, setCorrections] = useState<DocumentCorrections>({});
-  const [activeView, setActiveView] = useState<ViewId>("overview");
+  const [changes, setChanges] = useState<readonly ChangeReview[]>(initialAnalysis?.changes ?? []);
+  const [project, setProject] = useState<ProjectSetup>(() => initialProject(initialAnalysis));
+  const [activeStep, setActiveStep] = useState<StepId>(initialAnalysis ? "review" : "project");
+  const [compareView, setCompareView] = useState<CompareViewId>("scope");
 
   const analysis = useMemo(() => {
     if (!base) return null;
-    if (Object.keys(corrections).length === 0) return base;
     return buildAnalysis(base.documents, {
-      projectType: base.projectType,
+      projectType: project.projectType,
+      location: project.location,
       corrections,
       rejections: base.rejections,
       analysisId: base.analysisId,
       generatedAt: base.generatedAt,
+      provenance: base.provenance,
+      changes,
+      risks: buildRiskObservations(project.projectType, project.location),
     });
-  }, [base, corrections]);
+  }, [base, corrections, changes, project.projectType, project.location]);
 
   function loadAnalysis(next: Analysis) {
     setBase(next);
     setCorrections({});
-    setActiveView("overview");
+    setChanges(next.changes);
+    setProject((current) => ({
+      name: current.name.trim() || next.documents[0]?.projectName.value || "",
+      location:
+        next.provenance.origin === "sample"
+          ? next.location
+          : base?.provenance.origin === "sample" && current.location === base.location
+            ? ""
+            : current.location,
+      projectType: next.projectType,
+    }));
+    setActiveStep("review");
+    setCompareView("scope");
   }
 
   function correctDocument(documentId: string, correction: DocumentCorrection) {
@@ -76,11 +122,27 @@ export function AnalyzeWorkspace({
     });
   }
 
+  function startOver() {
+    setBase(null);
+    setCorrections({});
+    setChanges([]);
+    setProject({ name: "", location: "", projectType: "new_home" });
+    setActiveStep("project");
+    setCompareView("scope");
+  }
+
   const projectName =
-    analysis?.documents.find((document) => document.projectName.value)?.projectName.value ??
-    analysis?.documents[0]?.fileName ??
-    "New document analysis";
+    project.name.trim() ||
+    analysis?.documents.find((document) => document.projectName.value)?.projectName.value ||
+    "Untitled comparison";
   const correctionCount = Object.keys(corrections).length;
+  const canReview = base !== null;
+  const stepIndex = STEPS.findIndex((step) => step.id === activeStep) + 1;
+  const step = STEPS[stepIndex - 1];
+
+  function canOpenStep(id: StepId): boolean {
+    return id === "project" || id === "documents" || canReview;
+  }
 
   return (
     <div className="app-shell">
@@ -91,46 +153,58 @@ export function AnalyzeWorkspace({
           </span>
           <span>
             <strong>BuildScope Check</strong>
-            <small>Document analysis</small>
+            <small>Proposal review</small>
           </span>
         </Link>
 
-        <nav aria-label="Analysis workspace sections">
-          <ul className="app-nav">
-            {VIEWS.map((view) => (
-              <li key={view.id}>
-                <button
-                  type="button"
-                  className={activeView === view.id ? "nav-button nav-button-active" : "nav-button"}
-                  aria-current={activeView === view.id ? "page" : undefined}
-                  disabled={!analysis && view.id !== "overview"}
-                  onClick={() => setActiveView(view.id)}
-                >
-                  {view.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <nav aria-label="Proposal review steps">
+          <ol className="flow-nav">
+            {STEPS.map((item, index) => {
+              const enabled = canOpenStep(item.id);
+              const active = activeStep === item.id;
+              const complete = index < stepIndex - 1;
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className={[
+                      "flow-nav-button",
+                      active ? "flow-nav-button-active" : "",
+                      complete ? "flow-nav-button-complete" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    aria-current={active ? "step" : undefined}
+                    disabled={!enabled}
+                    onClick={() => setActiveStep(item.id)}
+                  >
+                    <span className="flow-nav-number" aria-hidden="true">
+                      {complete ? "✓" : index + 1}
+                    </span>
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.hint}</small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
         </nav>
 
         <div className="sidebar-actions">
-          <button
-            type="button"
-            className="button button-secondary button-small"
-            onClick={() => {
-              setBase(null);
-              setCorrections({});
-              setActiveView("overview");
-            }}
-          >
-            New analysis
-          </button>
-          <Link className="sidebar-link" href="/demo">
-            Open the P2 synthetic demo
-          </Link>
+          {base ? (
+            <button
+              type="button"
+              className="button button-secondary button-small"
+              onClick={startOver}
+            >
+              Start over
+            </button>
+          ) : null}
           <p className="sidebar-note">
             Deterministic extraction only. No AI, OCR, paid cost data, live payments or persistent
-            file storage.
+            file storage. Do not upload confidential documents.
           </p>
         </div>
       </aside>
@@ -138,11 +212,13 @@ export function AnalyzeWorkspace({
       <div className="app-main">
         <header className="app-topbar no-print">
           <div>
-            <p className="breadcrumb">Synthetic document analysis</p>
+            <p className="breadcrumb">
+              Step {stepIndex} of {STEPS.length} — {step?.label}
+            </p>
             <h1>{projectName}</h1>
           </div>
           <div className="topbar-tags">
-            <span className="tag tag-warning">Synthetic test data</span>
+            <span className="tag tag-muted">{PROJECT_TYPE_LABELS[project.projectType]}</span>
             {analysis ? (
               <span className="tag tag-muted">
                 {analysis.metrics.documentsAccepted} document
@@ -162,74 +238,192 @@ export function AnalyzeWorkspace({
         </header>
 
         <main className="app-content" id="analysis-content">
-          {activeView === "overview" ? (
-            <div className="view-stack">
-              <UploadPanel hasAnalysis={base !== null} onAnalysis={loadAnalysis} />
-              {analysis ? (
-                <OverviewPanel
-                  analysis={analysis}
-                  onOpenDocuments={() => setActiveView("documents")}
-                  onOpenComparison={() => setActiveView("comparison")}
-                  onOpenFindings={() => setActiveView("findings")}
-                />
-              ) : (
-                <section className="card">
-                  <div className="card-head">
-                    <div>
-                      <h2>How this analysis works</h2>
-                      <p className="card-sub">
-                        The pipeline is deterministic and evidence-linked. It does not ask an AI
-                        model to invent scope, totals or responsibilities.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="card-body">
-                    <ol className="status-list">
-                      <li>
-                        Validate the PDF header, size, encryption, page count and extractable text.
-                      </li>
-                      <li>
-                        Extract fields, line items, exclusions, responsibilities, specifications and
-                        terms.
-                      </li>
-                      <li>Recalculate quantity × unit price and stated totals in integer cents.</li>
-                      <li>
-                        Compare each scope area and label missing information instead of assuming
-                        zero.
-                      </li>
-                      <li>
-                        Show findings with document, page, section and quoted source evidence.
-                      </li>
-                    </ol>
-                    <p className="notice notice-warning" role="note">
-                      This is a synthetic P3 lab. Uploads are not stored. Do not upload confidential
-                      documents, and do not treat any result as a real quote or professional advice.
-                    </p>
-                  </div>
-                </section>
-              )}
-            </div>
-          ) : null}
-          {analysis && activeView === "documents" ? (
-            <DocumentsPanel
-              analysis={analysis}
-              onCorrect={correctDocument}
-              onResetDocument={resetDocument}
+          {activeStep === "project" ? (
+            <ProjectStep
+              value={project}
+              onChange={setProject}
+              hasAnalysis={base !== null}
+              onContinue={() => setActiveStep(base ? "review" : "documents")}
             />
           ) : null}
-          {analysis && activeView === "comparison" ? <ComparisonPanel analysis={analysis} /> : null}
-          {analysis && activeView === "responsibilities" ? (
-            <ResponsibilitiesPanel analysis={analysis} />
+
+          {activeStep === "documents" ? (
+            <div className="view-stack">
+              <UploadPanel
+                projectType={project.projectType}
+                hasAnalysis={base !== null}
+                onAnalysis={loadAnalysis}
+              />
+              {base ? (
+                <div className="step-actions">
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => setActiveStep("project")}
+                  >
+                    Back to project
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={() => setActiveStep("review")}
+                  >
+                    Continue to review
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
-          {analysis && activeView === "costs" ? <FinancialPanel analysis={analysis} /> : null}
-          {analysis && activeView === "findings" ? <FindingsPanel analysis={analysis} /> : null}
-          {analysis && activeView === "report" ? <ReportPanel analysis={analysis} /> : null}
+
+          {activeStep === "review" && analysis ? (
+            <div className="view-stack">
+              <section className="step-heading">
+                <div>
+                  <p className="eyebrow">Step 3 of 5</p>
+                  <h2>Review what BuildScope extracted</h2>
+                  <p>
+                    Correct a field or line-item category before relying on the comparison. Every
+                    correction is marked and keeps its source evidence.
+                  </p>
+                </div>
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="button button-secondary button-small"
+                    onClick={() => setActiveStep("documents")}
+                  >
+                    Back to documents
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-primary button-small"
+                    onClick={() => setActiveStep("compare")}
+                  >
+                    Continue to comparison
+                  </button>
+                </div>
+              </section>
+              <div className="step-summary">
+                <span>
+                  <strong>{analysis.metrics.documentsAccepted}</strong> documents accepted
+                </span>
+                <span>
+                  <strong>{analysis.metrics.lineItemsExtracted}</strong> line items extracted
+                </span>
+                <span>
+                  <strong>{analysis.metrics.findings}</strong> findings and questions
+                </span>
+                <span>
+                  <strong>{correctionCount}</strong> corrected documents
+                </span>
+              </div>
+              <DocumentsPanel
+                analysis={analysis}
+                onCorrect={correctDocument}
+                onResetDocument={resetDocument}
+              />
+            </div>
+          ) : null}
+
+          {activeStep === "compare" && analysis ? (
+            <div className="view-stack">
+              <section className="step-heading">
+                <div>
+                  <p className="eyebrow">Step 4 of 5</p>
+                  <h2>Compare scope, money and open questions</h2>
+                  <p>
+                    Switch views to inspect the same evidence from different angles. Unknown or
+                    unpriced scope stays outside every total.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="button button-primary button-small"
+                  onClick={() => setActiveStep("report")}
+                >
+                  Continue to report
+                </button>
+              </section>
+              <div className="subtabs" role="tablist" aria-label="Comparison views">
+                {COMPARE_VIEWS.map((view) => (
+                  <button
+                    key={view.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={compareView === view.id}
+                    className={compareView === view.id ? "subtab subtab-active" : "subtab"}
+                    onClick={() => setCompareView(view.id)}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
+              {compareView === "scope" ? <ComparisonPanel analysis={analysis} /> : null}
+              {compareView === "responsibilities" ? (
+                <ResponsibilitiesPanel analysis={analysis} />
+              ) : null}
+              {compareView === "costs" ? <FinancialPanel analysis={analysis} /> : null}
+              {compareView === "changes" ? (
+                <ChangesPanel
+                  changes={changes}
+                  baselineCents={analysis.documents.reduce<number | null>((highest, document) => {
+                    const total = document.statedTotalCents.value;
+                    return total === null ? highest : Math.max(highest ?? total, total);
+                  }, null)}
+                  onChanges={setChanges}
+                />
+              ) : null}
+              {compareView === "risks" ? (
+                <RiskPanel projectType={project.projectType} location={project.location} />
+              ) : null}
+              {compareView === "findings" ? <FindingsPanel analysis={analysis} /> : null}
+              <div className="step-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setActiveStep("review")}
+                >
+                  Back to review
+                </button>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={() => setActiveStep("report")}
+                >
+                  Continue to report
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {activeStep === "report" && analysis ? (
+            <div className="view-stack">
+              <section className="step-heading no-print">
+                <div>
+                  <p className="eyebrow">Step 5 of 5</p>
+                  <h2>Your review report</h2>
+                  <p>
+                    Print or save the report, then use the open questions to get clear answers
+                    before signing or paying.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="button button-secondary button-small"
+                  onClick={() => setActiveStep("compare")}
+                >
+                  Back to comparison
+                </button>
+              </section>
+              <ReportPanel analysis={analysis} projectName={projectName} />
+            </div>
+          ) : null}
         </main>
 
         <footer className="app-footer no-print">
           <p>
-            Synthetic document lab. Deterministic extraction and arithmetic only; not a construction
-            quote, legal advice or professional certification.
+            BuildScope Check is a deterministic document review aid, not a construction quote, legal
+            advice, property report or professional certification.
           </p>
         </footer>
       </div>

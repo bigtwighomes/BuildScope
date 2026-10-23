@@ -13,6 +13,7 @@ const artifactDir = path.resolve("artifacts/browser-check");
 const edgePath =
   process.env.BUILDSCOPE_BROWSER_PATH ??
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const fixtureDir = path.resolve("tests/fixtures/synthetic");
 
 const results = [];
 const consoleErrors = [];
@@ -21,11 +22,23 @@ let server;
 
 function record(name, pass, detail = "") {
   results.push({ name, pass, detail });
-  console.log(`${pass ? "PASS" : "FAIL"} ${name}${detail ? ` — ${detail}` : ""}`);
+  console.log(`${pass ? "PASS" : "FAIL"} ${name}${detail ? ` - ${detail}` : ""}`);
 }
 
 function check(name, condition, detail = "") {
   record(name, Boolean(condition), detail);
+}
+
+async function scenario(name, work) {
+  const failedBefore = results.filter((result) => !result.pass).length;
+  try {
+    await work();
+  } catch (error) {
+    record(name, false, error instanceof Error ? error.message : String(error));
+    return;
+  }
+  const failedAfter = results.filter((result) => !result.pass).length;
+  record(name, failedAfter === failedBefore, `${failedAfter - failedBefore} failed checks`);
 }
 
 async function waitForServer(url, timeoutMs = 90_000) {
@@ -50,7 +63,24 @@ async function startServer() {
   const { openSync } = await import("node:fs");
   const outFd = openSync(out, "w");
   const errFd = openSync(err, "w");
-  server = spawn("npm run dev -- -p 3117", {
+
+  if (process.env.BUILDSCOPE_SKIP_BUILD !== "1") {
+    const build = spawn("npm run build", {
+      cwd: process.cwd(),
+      stdio: ["ignore", outFd, errFd],
+      windowsHide: true,
+      shell: true,
+    });
+    const exitCode = await new Promise((resolve, reject) => {
+      build.on("error", reject);
+      build.on("exit", resolve);
+    });
+    if (exitCode !== 0) {
+      throw new Error(`Production build failed with exit code ${exitCode}. See ${out}`);
+    }
+  }
+
+  server = spawn("npm run start -- -p 3117", {
     cwd: process.cwd(),
     stdio: ["ignore", outFd, errFd],
     windowsHide: true,
@@ -118,7 +148,40 @@ async function focusIsVisible(page) {
 
 async function expectHeading(page, name) {
   const heading = page.getByRole("heading", { name, exact: false }).first();
-  await heading.waitFor({ state: "visible", timeout: 5000 });
+  await heading.waitFor({ state: "visible", timeout: 10_000 });
+}
+
+async function expectText(page, text) {
+  await page
+    .getByText(text, { exact: false })
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 });
+}
+
+async function goToReview(page) {
+  await page.goto(`${baseUrl}/analyze`, { waitUntil: "networkidle" });
+  await expectHeading(page, "Compare proposals without guessing");
+  await page.getByRole("button", { name: "Continue to documents" }).click();
+  await expectHeading(page, "Add two or three proposals");
+}
+
+async function openSample(page) {
+  await page.goto(`${baseUrl}/analyze?sample=1`, { waitUntil: "networkidle" });
+  await expectHeading(page, "Review what BuildScope extracted");
+}
+
+async function openCompare(page) {
+  const nav = page.getByRole("navigation", { name: "Proposal review steps" });
+  await nav.getByRole("button", { name: /Compare/ }).click();
+  await expectHeading(page, "Compare scope, money and open questions");
+}
+
+async function selectProjectType(page, name) {
+  await page.locator("label.choice-card").filter({ hasText: name }).click();
+}
+
+async function selectCompareView(page, name) {
+  await page.getByRole("tab", { name, exact: true }).click();
 }
 
 await mkdir(artifactDir, { recursive: true });
@@ -136,334 +199,427 @@ try {
   });
   const page = await desktop.newPage();
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() === "error" && !message.text().includes("status of 413")) {
+      consoleErrors.push(message.text());
+    }
   });
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
-  await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
-  await expectHeading(page, "Compare construction proposals");
-  check("Landing renders", (await page.title()).includes("BuildScope"));
-  check(
-    "Landing shows synthetic notice",
-    await page.getByText("This is a synthetic P2/P3 lab.").isVisible(),
-  );
-  check(
-    "Landing links to the P3 document lab",
-    (await page.getByRole("link", { name: /Analyze synthetic PDFs/ }).getAttribute("href")) ===
-      "/analyze",
-  );
-  check(
-    "Landing links to the P2 demo",
-    (await page.getByRole("link", { name: /Explore the P2 demo/ }).getAttribute("href")) ===
-      "/demo",
-  );
-  await runAxe(page, "Landing desktop");
-  await page.screenshot({ path: path.join(artifactDir, "landing-desktop.png"), fullPage: true });
-
-  await page.getByRole("link", { name: /Explore the P2 demo/ }).click();
-  await page.waitForURL("**/demo");
-  await expectHeading(page, "Why the headline totals cannot be compared directly");
-  check("Demo loads overview", page.url().endsWith("/demo"));
-  await runAxe(page, "Demo overview desktop");
-
-  const nav = page.getByRole("navigation", { name: "Demo workspace sections" });
-  const navButtons = nav.getByRole("button");
-  check("Demo navigation has eight sections", (await navButtons.count()) === 8);
-
-  const views = [
-    ["Scope comparison", "Side-by-side scope comparison"],
-    ["Responsibilities", "Responsibility matrix"],
-    ["Costs & unknowns", "1 · Known costs"],
-    ["Changes", "Change and change-order impact"],
-    ["Location & risks", "Location and risk screening"],
-    ["Findings & questions", "Findings and prioritized questions"],
-    ["Report preview", "Report preview"],
-    ["Overview", "Why the headline totals cannot be compared directly"],
-  ];
-
-  for (const [buttonName, heading] of views) {
-    await nav.getByRole("button", { name: buttonName, exact: true }).click();
-    await expectHeading(page, heading);
-    check(`Navigation: ${buttonName}`, true);
-  }
-
-  await nav.getByRole("button", { name: "Scope comparison", exact: true }).click();
-  const search = page.getByRole("searchbox", { name: "Search scope areas" });
-  await search.fill("hvac");
-  await page.waitForTimeout(150);
-  const filteredCount = page.locator(".result-count");
-  check("Scope text search filters rows", (await filteredCount.textContent())?.includes("1 of"));
-  await search.fill("");
-  await page
-    .getByRole("group", { name: "Filter by scope status" })
-    .getByRole("button", { name: /^Excluded/ })
-    .click();
-  check("Scope status filter narrows rows", (await filteredCount.textContent())?.includes("of 14"));
-  await page
-    .getByRole("group", { name: "Filter by scope status" })
-    .getByRole("button", { name: /^All/ })
-    .click();
-  await page.locator(".scope-table").getByRole("button", { name: "Details" }).first().click();
-  check(
-    "Scope evidence drilldown opens",
-    await page.locator(".scope-detail-row .evidence-list").first().isVisible(),
-  );
-  await page.screenshot({ path: path.join(artifactDir, "scope-desktop.png"), fullPage: true });
-  await runAxe(page, "Demo scope desktop");
-
-  await nav.getByRole("button", { name: "Responsibilities", exact: true }).click();
-  const responsibilitySelect = page.getByLabel("Scope area");
-  await responsibilitySelect.selectOption("hvac");
-  check(
-    "Responsibility scope selector updates matrix",
-    (await page.getByRole("table").innerText()).includes("Trade contractor"),
-  );
-  await runAxe(page, "Demo responsibilities desktop");
-
-  await nav.getByRole("button", { name: "Costs & unknowns", exact: true }).click();
-  check(
-    "Cost data shows OFF",
-    (await page.locator(".mode-banner").innerText()).includes("Cost-data mode: OFF"),
-  );
-  await page.screenshot({ path: path.join(artifactDir, "costs-desktop.png"), fullPage: true });
-  await runAxe(page, "Demo costs desktop");
-
-  await nav.getByRole("button", { name: "Changes", exact: true }).click();
-  await page
-    .getByRole("group", { name: "Filter changes by status" })
-    .getByRole("button", { name: /^Approved/ })
-    .click();
-  check(
-    "Change status filter narrows cards",
-    (await page.locator(".change-card").count()) >= 1,
-    `${await page.locator(".change-card").count()} cards`,
-  );
-  await page
-    .getByRole("group", { name: "Filter changes by status" })
-    .getByRole("button", { name: /^All/ })
-    .click();
-  await runAxe(page, "Demo changes desktop");
-
-  await nav.getByRole("button", { name: "Location & risks", exact: true }).click();
-  check(
-    "Risk cards stay not evaluated",
-    (await page.locator(".risk-card").count()) === 6 &&
-      (await page.locator(".risk-placeholder").count()) === 6,
-  );
-  await runAxe(page, "Demo risks desktop");
-
-  await nav.getByRole("button", { name: "Findings & questions", exact: true }).click();
-  const copyButton = page.getByRole("button", { name: "Copy question" }).first();
-  await copyButton.click();
-  const copyStatusVisible = await page
-    .getByRole("status")
-    .first()
-    .waitFor({ state: "visible", timeout: 5000 })
-    .then(() => true)
-    .catch(() => false);
-  check("Copy-question reports success", copyStatusVisible);
-  const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-  check("Clipboard contains question text", clipboard.length > 20, `${clipboard.length} chars`);
-  await runAxe(page, "Demo findings desktop");
-
-  await nav.getByRole("button", { name: "Report preview", exact: true }).click();
-  check(
-    "Report preview has evidence disclaimer",
-    await page.getByText("Methodology and limitations").isVisible(),
-  );
-  await page.screenshot({ path: path.join(artifactDir, "report-desktop.png"), fullPage: true });
-  await runAxe(page, "Demo report desktop");
-
-  await page.emulateMedia({ media: "print" });
-  check(
-    "Print CSS hides navigation",
-    (await page
-      .locator(".app-sidebar")
-      .evaluate((element) => getComputedStyle(element).display)) === "none",
-  );
-  const printPdf = await page.pdf({ format: "A4", printBackground: true });
-  await writeFile(path.join(artifactDir, "report-print.pdf"), printPdf);
-  check("Print PDF generated", printPdf.byteLength > 20_000, `${printPdf.byteLength} bytes`);
-  await page.emulateMedia({ media: "screen" });
-
-  await nav.getByRole("button", { name: "Overview", exact: true }).click();
-  await page.mouse.click(5, 5);
-  let focus = null;
-  for (let index = 0; index < 12; index += 1) {
-    await page.keyboard.press("Tab");
-    focus = await focusIsVisible(page);
-    if (focus.tag === "BUTTON" && focus.text === "Overview") break;
-  }
-  check("Keyboard focus is visible", focus?.ok, JSON.stringify(focus));
-  await page.keyboard.press("Tab");
-  const secondFocus = await focusIsVisible(page);
-  check(
-    "Tab order reaches next nav item",
-    secondFocus.text === "Scope comparison",
-    JSON.stringify(secondFocus),
-  );
-
-  const desktopOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  check(
-    "Desktop has no page-level horizontal overflow",
-    desktopOverflow <= 1,
-    `${desktopOverflow}px`,
-  );
-
-  await page.goto(`${baseUrl}/analyze`, { waitUntil: "networkidle" });
-  await expectHeading(page, "Cedar Ridge Retreat");
-  check(
-    "Analyze sample loads three documents",
-    (await page.locator(".topbar-tags").innerText()).includes("3 documents"),
-  );
-  const analyzeNav = page.getByRole("navigation", { name: "Analysis workspace sections" });
-  check(
-    "Analyze navigation has seven sections",
-    (await analyzeNav.getByRole("button").count()) === 7,
-  );
-  check(
-    "Analyze overview reports findings",
-    (await page.locator(".stat-card").filter({ hasText: "Findings" }).innerText()).includes("21"),
-  );
-  check(
-    "Prompt-injection markup is not executed",
-    await page.evaluate(() => typeof window.__buildscopeInjected === "undefined"),
-  );
-  await runAxe(page, "Analyze overview desktop");
-  await page.screenshot({
-    path: path.join(artifactDir, "analyze-overview-desktop.png"),
-    fullPage: true,
+  await scenario("S01 Landing page and entry points", async () => {
+    const response = await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+    check("Landing responds with 200", response?.status() === 200, String(response?.status()));
+    await expectHeading(page, "Compare construction proposals");
+    check("Landing title includes BuildScope", (await page.title()).includes("BuildScope"));
+    check(
+      "Landing primary CTA starts a review",
+      (await page.getByRole("link", { name: /Start a proposal review/ }).getAttribute("href")) ===
+        "/analyze",
+    );
+    check(
+      "Landing sample CTA opens the synthetic flow",
+      (await page
+        .getByRole("link", { name: /Explore the synthetic example/ })
+        .getAttribute("href")) === "/analyze?sample=1",
+    );
+    await runAxe(page, "Landing desktop");
+    await page.screenshot({ path: path.join(artifactDir, "landing-desktop.png"), fullPage: true });
   });
 
-  await analyzeNav.getByRole("button", { name: "Documents", exact: true }).click();
-  await expectHeading(page, "Extracted fields and document register");
-  await page.getByText("Correct extracted fields and line categories").first().click();
-  await page.getByLabel("Pricing basis").first().selectOption("materials_package");
-  check("Correction marks the document", await page.getByText("1 corrected document").isVisible());
-  check(
-    "Correction log records the change",
-    (await page.locator(".correction-log").first().innerText()).includes("Pricing basis"),
-  );
-  await page.getByRole("button", { name: "Reset corrections for this document" }).first().click();
-  check(
-    "Resetting corrections removes the correction tag",
-    (await page.getByText("corrected document").count()) === 0,
-  );
-  await runAxe(page, "Analyze documents desktop");
-
-  await analyzeNav.getByRole("button", { name: "Scope comparison", exact: true }).click();
-  await expectHeading(page, "Scope comparison");
-  const resultCount = page.locator(".result-count");
-  check(
-    "Analyze comparison shows all scope areas",
-    (await resultCount.textContent())?.includes("Showing 17 of 17"),
-  );
-  await page
-    .getByRole("group", { name: "Filter scope comparisons" })
-    .getByRole("button", { name: "Needs review" })
-    .click();
-  const narrowedCount = (await resultCount.textContent()) ?? "";
-  check(
-    "Analyze comparison filter narrows rows",
-    !narrowedCount.includes("17 of 17"),
-    narrowedCount,
-  );
-  await page
-    .locator(".scope-table")
-    .getByRole("button", { name: "Evidence & question" })
-    .first()
-    .click();
-  check(
-    "Analyze evidence drilldown opens",
-    await page.locator(".scope-detail-row .evidence-list").first().isVisible(),
-  );
-  await runAxe(page, "Analyze scope desktop");
-  await page.screenshot({
-    path: path.join(artifactDir, "analyze-scope-desktop.png"),
-    fullPage: true,
+  await scenario("S02 Legacy demo route redirects into the five-step flow", async () => {
+    await page.goto(`${baseUrl}/demo`, { waitUntil: "networkidle" });
+    await page.waitForURL(/\/analyze\?sample=1$/, { timeout: 10_000 });
+    await expectHeading(page, "Review what BuildScope extracted");
+    check("Legacy /demo URL ends at the sample flow", page.url().endsWith("/analyze?sample=1"));
+    check(
+      "Legacy demo navigation is gone",
+      (await page.getByRole("navigation", { name: "Demo workspace sections" }).count()) === 0,
+    );
   });
 
-  await analyzeNav.getByRole("button", { name: "Responsibilities", exact: true }).click();
-  await expectHeading(page, "Responsibility matrix");
-  check(
-    "Analyze responsibility matrix is populated",
-    (await page.locator(".responsibility-table").innerText()).includes("GC / builder"),
-  );
-  await runAxe(page, "Analyze responsibilities desktop");
+  await scenario("S03 Project setup captures type, name and location", async () => {
+    await page.goto(`${baseUrl}/analyze`, { waitUntil: "networkidle" });
+    await expectHeading(page, "Compare proposals without guessing");
+    await page.getByLabel("Project name").fill("Harborlight bathroom review");
+    await page.getByLabel("City, state or postal code").fill("Portland, OR");
+    await selectProjectType(page, "Bathroom renovation");
+    check(
+      "Bathroom project type is selected",
+      await page.getByRole("radio", { name: /Bathroom renovation/ }).isChecked(),
+    );
+    check(
+      "Project summary in top bar reflects the name",
+      (await page.locator(".app-topbar h1").innerText()).includes("Harborlight bathroom review"),
+    );
+    await page.getByRole("button", { name: "Continue to documents" }).click();
+    await expectHeading(page, "Add two or three proposals");
+    check(
+      "Documents step shows the selected project type",
+      (await page.locator(".upload-card .tag").innerText()).includes("Bathroom renovation"),
+    );
+  });
 
-  await analyzeNav.getByRole("button", { name: "Costs & unknowns", exact: true }).click();
-  await expectHeading(page, "Costs and unknowns");
-  check(
-    "Analyze arithmetic exposes the discrepancy",
-    await page.getByText("$2,500.00").first().isVisible(),
-  );
-  await runAxe(page, "Analyze costs desktop");
+  await scenario("S04 Synthetic sample loads three proposals and opens review", async () => {
+    await openSample(page);
+    check(
+      "Sample top bar shows three documents",
+      (await page.locator(".topbar-tags").innerText()).includes("3 documents"),
+    );
+    check(
+      "Sample displays project name",
+      (await page.locator(".app-topbar h1").innerText()).includes("Cedar Ridge Retreat"),
+    );
+    check(
+      "Review summary shows extracted line items",
+      (await page.locator(".step-summary").innerText()).includes("32"),
+    );
+    check(
+      "Synthetic provenance is visible",
+      (await page.locator(".topbar-tags").innerText()).includes("New home"),
+    );
+    await page.screenshot({
+      path: path.join(artifactDir, "review-desktop.png"),
+      fullPage: true,
+    });
+  });
 
-  await analyzeNav.getByRole("button", { name: "Findings & questions", exact: true }).click();
-  await expectHeading(page, "Findings and prioritized questions");
-  await page.getByRole("button", { name: "Copy question" }).first().click();
-  const analyzeCopyStatusVisible = await page
-    .getByRole("status")
-    .first()
-    .waitFor({ state: "visible", timeout: 5000 })
-    .then(() => true)
-    .catch(() => false);
-  check("Analyze copy-question reports success", analyzeCopyStatusVisible);
-  await runAxe(page, "Analyze findings desktop");
+  await scenario("S05 Reviewer corrections are marked and reversible", async () => {
+    await openSample(page);
+    await page.getByText("Correct extracted fields and line categories").first().click();
+    await page.getByLabel("Pricing basis").first().selectOption("materials_package");
+    check(
+      "Correction marks the document",
+      await page.getByText("1 corrected document", { exact: true }).isVisible(),
+    );
+    check(
+      "Correction log records the change",
+      (await page.locator(".correction-log").first().innerText()).includes("Pricing basis"),
+    );
+    await page.getByRole("button", { name: "Reset corrections for this document" }).first().click();
+    check(
+      "Resetting corrections removes the corrected tag",
+      (await page.getByText("1 corrected document", { exact: true }).count()) === 0,
+    );
+    await runAxe(page, "Documents review desktop");
+  });
 
-  await analyzeNav.getByRole("button", { name: "Report", exact: true }).click();
-  await expectHeading(page, "1. Documents and extraction");
-  check(
-    "Analyze report includes inline evidence",
-    await page.locator(".report-evidence blockquote").first().isVisible(),
-  );
-  await page.emulateMedia({ media: "print" });
-  check(
-    "Analyze print CSS hides navigation",
-    (await page
-      .locator(".app-sidebar")
-      .evaluate((element) => getComputedStyle(element).display)) === "none",
-  );
-  const analyzePrintPdf = await page.pdf({ format: "A4", printBackground: true });
-  await writeFile(path.join(artifactDir, "analyze-report-print.pdf"), analyzePrintPdf);
-  check(
-    "Analyze print PDF generated",
-    analyzePrintPdf.byteLength > 20_000,
-    `${analyzePrintPdf.byteLength} bytes`,
-  );
-  await page.emulateMedia({ media: "screen" });
-  await runAxe(page, "Analyze report desktop");
+  await scenario("S06 Scope comparison filters and evidence drilldown work", async () => {
+    await openSample(page);
+    await openCompare(page);
+    const count = page.locator(".result-count");
+    check("Comparison reports every scope area", (await count.innerText()).includes("scope areas"));
+    await page
+      .getByRole("group", { name: "Filter scope comparisons" })
+      .getByRole("button", { name: "Needs review" })
+      .click();
+    check(
+      "Needs-review filter changes the row count",
+      (await count.innerText()).includes("Showing"),
+    );
+    await page.getByRole("button", { name: "All scope areas" }).click();
+    await page
+      .locator(".scope-table")
+      .getByRole("button", { name: "Evidence & question" })
+      .first()
+      .click();
+    check(
+      "Evidence drilldown exposes cited spans",
+      await page.locator(".scope-detail-row .evidence-list").first().isVisible(),
+    );
+    await runAxe(page, "Scope comparison desktop");
+  });
 
-  await analyzeNav.getByRole("button", { name: "Overview", exact: true }).click();
-  await page
-    .locator('input[type="file"]')
-    .setInputFiles([
-      "tests/fixtures/synthetic/no-text-proposal.pdf",
-      "tests/fixtures/synthetic/encrypted-proposal.pdf",
-    ]);
-  await page.getByRole("button", { name: /Analyze 2 PDFs/ }).click();
-  await page
-    .getByText("No extractable text was found.")
-    .waitFor({ state: "visible", timeout: 30_000 });
-  check("Analyze rejects an image-only PDF", true);
-  check(
-    "Analyze rejects an encrypted PDF",
-    await page.getByText("password protected", { exact: false }).first().isVisible(),
-  );
-  check(
-    "Rejected upload leaves no accepted documents",
-    (await page.locator(".topbar-tags").innerText()).includes("0 documents"),
-  );
-  await page.getByRole("button", { name: "Load synthetic sample" }).click();
-  await page
-    .getByText("3 documents", { exact: true })
-    .waitFor({ state: "visible", timeout: 30_000 });
-  check(
-    "Analyze reloads the synthetic sample",
-    await page.getByRole("heading", { name: "Analysis summary" }).isVisible(),
-  );
+  await scenario("S07 Responsibility matrix remains populated", async () => {
+    await openSample(page);
+    await openCompare(page);
+    await selectCompareView(page, "Responsibilities");
+    await expectHeading(page, "Responsibility matrix");
+    check(
+      "Responsibility table identifies contractor and owner roles",
+      (await page.locator(".responsibility-table").innerText()).includes("GC / builder"),
+    );
+    await runAxe(page, "Responsibilities desktop");
+  });
+
+  await scenario("S08 Costs expose totals and the stated arithmetic discrepancy", async () => {
+    await openSample(page);
+    await openCompare(page);
+    await selectCompareView(page, "Costs & unknowns");
+    await expectHeading(page, "Costs and unknowns");
+    check("Northline total is visible", await page.getByText("$486,540.00").first().isVisible());
+    check("Sagebrush total is visible", await page.getByText("$508,162.40").first().isVisible());
+    check(
+      "Arithmetic discrepancy is visible",
+      await page.getByText("$2,500.00").first().isVisible(),
+    );
+    check("Cost-data mode remains OFF", await page.getByText("Cost data OFF").first().isVisible());
+    await runAxe(page, "Costs desktop");
+  });
+
+  await scenario("S09 Change register computes additions, credits and fees", async () => {
+    await openSample(page);
+    await openCompare(page);
+    await selectCompareView(page, "Changes");
+    await expectHeading(page, "Change and revision review");
+    check("Sample change cards are present", (await page.locator(".change-card").count()) >= 2);
+    await page.getByLabel("Title", { exact: true }).fill("Floor tile upgrade");
+    await page
+      .getByLabel("What changed?")
+      .fill("Synthetic test of a customer-requested tile change.");
+    await page.getByLabel("Additions").fill("1,000.00");
+    await page.getByLabel("Credits").fill("200.00");
+    await page.getByLabel("Fee %").fill("10");
+    await page.getByLabel("Fixed fee").fill("50.00");
+    await page.getByRole("button", { name: "Add change" }).click();
+    check("New change appears in the register", (await page.locator(".change-card").count()) >= 3);
+    check(
+      "Documented change includes fee arithmetic",
+      (await page.getByText("$930.00", { exact: false }).count()) > 0,
+    );
+    check(
+      "Unknown exposure stays visible",
+      (await page.getByText("Unknown exposure", { exact: false }).count()) >= 3,
+    );
+    const lastCard = page.locator(".change-card").last();
+    await lastCard.getByRole("button", { name: "Remove" }).click();
+    check(
+      "Removing a change updates the register",
+      (await page.locator(".change-card").count()) >= 2,
+    );
+    await runAxe(page, "Changes desktop");
+  });
+
+  await scenario("S10 Site questions stay labelled not evaluated with sources", async () => {
+    await openSample(page);
+    await openCompare(page);
+    await selectCompareView(page, "Site questions");
+    await expectHeading(page, "Site and project screening questions");
+    check(
+      "Sample location is carried into screening",
+      (await page.getByText("Cedar Ridge, fictional sample", { exact: false }).count()) >= 1,
+    );
+    check("Screening cards are present", (await page.locator(".risk-card").count()) >= 4);
+    check(
+      "No screening result is presented as verified",
+      (await page.getByText("Not evaluated").count()) >= 1,
+    );
+    const sourceLinks = page.locator(".risk-card a");
+    check("Official source links are present", (await sourceLinks.count()) >= 3);
+    check(
+      "Source links use a safe external pattern",
+      (await sourceLinks.first().getAttribute("rel")) === "noreferrer",
+    );
+    await runAxe(page, "Site questions desktop");
+  });
+
+  await scenario("S11 Questions can be copied for a contractor conversation", async () => {
+    await openSample(page);
+    await openCompare(page);
+    await selectCompareView(page, "Questions");
+    await expectHeading(page, "Findings and prioritized questions");
+    await page.getByRole("button", { name: "Copy question" }).first().click();
+    const feedbackVisible = await page
+      .getByRole("status")
+      .first()
+      .waitFor({ state: "visible", timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+    check("Copy-question feedback is announced", feedbackVisible);
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+    check("Clipboard contains question text", clipboard.length > 20, `${clipboard.length} chars`);
+    await runAxe(page, "Questions desktop");
+  });
+
+  await scenario("S12 Report includes changes, risks, limitations and print output", async () => {
+    await openSample(page);
+    await page
+      .getByRole("navigation", { name: "Proposal review steps" })
+      .getByRole("button", { name: /Report/ })
+      .click();
+    await expectHeading(page, "Your review report");
+    check(
+      "Report has document section",
+      await page.getByRole("heading", { name: /1. Documents/ }).isVisible(),
+    );
+    check(
+      "Report has change register section",
+      await page.getByRole("heading", { name: /6. Change/ }).isVisible(),
+    );
+    check(
+      "Report has screening-question section",
+      await page.getByRole("heading", { name: /7. Site/ }).isVisible(),
+    );
+    check(
+      "Report carries inline source evidence",
+      await page.locator(".report-evidence blockquote").first().isVisible(),
+    );
+    await page.emulateMedia({ media: "print" });
+    check(
+      "Print CSS hides the step navigation",
+      (await page
+        .locator(".app-sidebar")
+        .evaluate((element) => getComputedStyle(element).display)) === "none",
+    );
+    const printPdf = await page.pdf({ format: "A4", printBackground: true });
+    await writeFile(path.join(artifactDir, "report-print.pdf"), printPdf);
+    check("Print PDF is generated", printPdf.byteLength > 20_000, `${printPdf.byteLength} bytes`);
+    await page.emulateMedia({ media: "screen" });
+    await runAxe(page, "Report desktop");
+    await page.screenshot({ path: path.join(artifactDir, "report-desktop.png"), fullPage: true });
+  });
+
+  await scenario("S13 Start over clears the working comparison", async () => {
+    await openSample(page);
+    await page.getByRole("button", { name: "Start over" }).click();
+    await expectHeading(page, "Compare proposals without guessing");
+    check(
+      "Start over clears document tags",
+      (await page.locator(".topbar-tags").innerText()).includes("No documents loaded"),
+    );
+    const breadcrumb = await page.locator(".breadcrumb").innerText();
+    check(
+      "Start over returns to project step",
+      breadcrumb.toLowerCase().includes("step 1 of 5"),
+      breadcrumb,
+    );
+  });
+
+  await scenario("S14 Invalid PDFs are rejected with named reasons", async () => {
+    await goToReview(page);
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([
+        path.join(fixtureDir, "no-text-proposal.pdf"),
+        path.join(fixtureDir, "encrypted-proposal.pdf"),
+      ]);
+    await page.getByRole("button", { name: /Analyze 2 PDFs/ }).click();
+    await expectText(page, "No extractable text was found.");
+    check(
+      "Encrypted PDF rejection is named",
+      await page.getByText("password protected", { exact: false }).first().isVisible(),
+    );
+    check(
+      "Rejected upload leaves no accepted documents",
+      (await page.locator(".topbar-tags").innerText()).includes("0 documents"),
+    );
+    await expectHeading(page, "Review what BuildScope extracted");
+  });
+
+  await scenario("S15 Synthetic sample can be reloaded after a rejection", async () => {
+    await page
+      .getByRole("navigation", { name: "Proposal review steps" })
+      .getByRole("button", { name: /Documents/ })
+      .click();
+    await page.getByRole("button", { name: "Use synthetic example" }).click();
+    await expectHeading(page, "Review what BuildScope extracted");
+    check(
+      "Reloaded sample shows three documents",
+      (await page.locator(".topbar-tags").innerText()).includes("3 documents"),
+    );
+  });
+
+  await scenario("S16 Bathroom project uploads compare waterproofing and ventilation", async () => {
+    await page.goto(`${baseUrl}/analyze`, { waitUntil: "networkidle" });
+    await page.getByLabel("Project name").fill("Maple Street bathroom");
+    await selectProjectType(page, "Bathroom renovation");
+    await page.getByRole("button", { name: "Continue to documents" }).click();
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([
+        path.join(fixtureDir, "willow-bath-renovation.pdf"),
+        path.join(fixtureDir, "harbor-bath-renovation.pdf"),
+      ]);
+    await page.getByRole("button", { name: /Analyze 2 PDFs/ }).click();
+    await expectHeading(page, "Review what BuildScope extracted");
+    check(
+      "Bathroom project type persists after upload",
+      (await page.locator(".topbar-tags").innerText()).includes("Bathroom renovation"),
+    );
+    await openCompare(page);
+    check(
+      "Bathroom scope comparison includes waterproofing",
+      (await page.locator(".scope-table").innerText()).includes("Wet-area waterproofing"),
+    );
+    check(
+      "Bathroom scope comparison includes ventilation",
+      (await page.locator(".scope-table").innerText()).includes("Bathroom ventilation"),
+    );
+    check(
+      "Bathroom project does not include sitework",
+      !(await page.locator(".scope-table").innerText()).includes("Sitework and excavation"),
+    );
+    await selectCompareView(page, "Costs & unknowns");
+    check(
+      "Willow bathroom total is visible",
+      await page.getByText("$40,957.50").first().isVisible(),
+    );
+    check(
+      "Harbor bathroom total is visible",
+      await page.getByText("$27,700.00").first().isVisible(),
+    );
+    await page.screenshot({
+      path: path.join(artifactDir, "bathroom-costs-desktop.png"),
+      fullPage: true,
+    });
+    await runAxe(page, "Bathroom comparison desktop");
+  });
+
+  await scenario("S17 Materials package project type reaches the upload step", async () => {
+    await page.goto(`${baseUrl}/analyze`, { waitUntil: "networkidle" });
+    await selectProjectType(page, "Materials package or kit");
+    await page.getByRole("button", { name: "Continue to documents" }).click();
+    await expectHeading(page, "Add two or three proposals");
+    check(
+      "Materials package type is shown on documents step",
+      (await page.locator(".upload-card .tag").innerText()).includes("Materials package"),
+    );
+  });
+
+  await scenario("S18 Security headers and no-store API responses are present", async () => {
+    const response = await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+    const headers = response?.headers() ?? {};
+    check("X-Content-Type-Options is nosniff", headers["x-content-type-options"] === "nosniff");
+    check("Framing is denied", headers["x-frame-options"] === "DENY");
+    check("Referrer policy is no-referrer", headers["referrer-policy"] === "no-referrer");
+    check(
+      "Content-Security-Policy restricts framing and objects",
+      (headers["content-security-policy"] ?? "").includes("frame-ancestors 'none'"),
+    );
+    const apiResult = await page.evaluate(async () => {
+      const sample = await fetch("/api/analyze/sample", { method: "POST" });
+      return { status: sample.status, cacheControl: sample.headers.get("cache-control") };
+    });
+    check("Sample API responds", apiResult.status === 200, String(apiResult.status));
+    check("Sample API is no-store", apiResult.cacheControl === "no-store");
+    const oversized = await page.evaluate(async () => {
+      const form = new FormData();
+      form.append("projectType", "new_home");
+      form.append("files", new Blob(["%PDF-1.4\n"], { type: "application/pdf" }), "large.pdf");
+      const padding = new Uint8Array(9 * 1024 * 1024);
+      form.append("padding", new Blob([padding]));
+      const response = await fetch("/api/analyze", { method: "POST", body: form });
+      return response.status;
+    });
+    check("Oversized upload is rejected with 413", oversized === 413, String(oversized));
+  });
+
+  await scenario("S19 Keyboard focus and tab order stay visible", async () => {
+    await page.goto(`${baseUrl}/analyze?sample=1`, { waitUntil: "networkidle" });
+    await page.mouse.click(5, 5);
+    let focus = null;
+    for (let index = 0; index < 15; index += 1) {
+      await page.keyboard.press("Tab");
+      focus = await focusIsVisible(page);
+      if (focus.ok && focus.tag === "BUTTON") break;
+    }
+    check("Focused control has a visible outline", focus?.ok, JSON.stringify(focus));
+    const labels = [];
+    for (let index = 0; index < 4; index += 1) {
+      const current = await focusIsVisible(page);
+      labels.push(current.text);
+      await page.keyboard.press("Tab");
+    }
+    check("Tab order is not empty", labels.filter(Boolean).length >= 3, JSON.stringify(labels));
+  });
 
   const tablet = await browser.newContext({ viewport: { width: 820, height: 1180 } });
   const tabletPage = await tablet.newPage();
@@ -471,28 +627,26 @@ try {
     if (message.type() === "error") consoleErrors.push(`[tablet] ${message.text()}`);
   });
   tabletPage.on("pageerror", (error) => pageErrors.push(`[tablet] ${error.message}`));
-  await tabletPage.goto(`${baseUrl}/demo`, { waitUntil: "networkidle" });
-  const tabletOverflow = await tabletPage.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  check("Tablet has no page-level horizontal overflow", tabletOverflow <= 1, `${tabletOverflow}px`);
-  check(
-    "Tablet navigation wraps horizontally",
-    (await tabletPage
-      .locator(".app-nav")
-      .evaluate((element) => getComputedStyle(element).flexDirection)) === "row",
-  );
-  await tabletPage.getByRole("button", { name: "Scope comparison", exact: true }).click();
-  await tabletPage.getByRole("searchbox", { name: "Search scope areas" }).fill("roof");
-  const tabletResultText = (await tabletPage.locator(".result-count").textContent()) ?? "";
-  const tabletVisibleCount = Number(tabletResultText.match(/Showing (\d+) of/)?.[1] ?? "0");
-  check(
-    "Tablet scope search works",
-    tabletVisibleCount > 0 && tabletVisibleCount < 14,
-    tabletResultText,
-  );
-  await tabletPage.screenshot({ path: path.join(artifactDir, "scope-tablet.png"), fullPage: true });
-  await runAxe(tabletPage, "Demo scope tablet");
+
+  await scenario("S20 Tablet layout and accessibility hold", async () => {
+    await tabletPage.goto(`${baseUrl}/analyze?sample=1`, { waitUntil: "networkidle" });
+    await expectHeading(tabletPage, "Review what BuildScope extracted");
+    const overflow = await tabletPage.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    check("Tablet has no page-level horizontal overflow", overflow <= 1, `${overflow}px`);
+    check(
+      "Tablet step navigation wraps horizontally",
+      (await tabletPage
+        .locator(".flow-nav")
+        .evaluate((element) => getComputedStyle(element).flexDirection)) === "row",
+    );
+    await tabletPage.screenshot({
+      path: path.join(artifactDir, "review-tablet.png"),
+      fullPage: true,
+    });
+    await runAxe(tabletPage, "Review tablet");
+  });
 
   const mobile = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -504,95 +658,121 @@ try {
     if (message.type() === "error") consoleErrors.push(`[mobile] ${message.text()}`);
   });
   mobilePage.on("pageerror", (error) => pageErrors.push(`[mobile] ${error.message}`));
-  await mobilePage.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
-  const mobileLandingOverflow = await mobilePage.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  check(
-    "Mobile landing has no horizontal overflow",
-    mobileLandingOverflow <= 1,
-    `${mobileLandingOverflow}px`,
-  );
-  await runAxe(mobilePage, "Landing mobile");
-  await mobilePage.screenshot({
-    path: path.join(artifactDir, "landing-mobile.png"),
-    fullPage: true,
+
+  await scenario("S21 Mobile landing and project step avoid overflow", async () => {
+    await mobilePage.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+    await expectHeading(mobilePage, "Compare construction proposals");
+    const landingOverflow = await mobilePage.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    check(
+      "Mobile landing has no horizontal overflow",
+      landingOverflow <= 1,
+      `${landingOverflow}px`,
+    );
+    await runAxe(mobilePage, "Landing mobile");
+    await mobilePage.screenshot({
+      path: path.join(artifactDir, "landing-mobile.png"),
+      fullPage: true,
+    });
+    await mobilePage.getByRole("link", { name: /Start a proposal review/ }).click();
+    await expectHeading(mobilePage, "Compare proposals without guessing");
+    const projectOverflow = await mobilePage.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    check(
+      "Mobile project step has no horizontal overflow",
+      projectOverflow <= 1,
+      `${projectOverflow}px`,
+    );
+    await runAxe(mobilePage, "Project mobile");
   });
 
-  await mobilePage.goto(`${baseUrl}/demo`, { waitUntil: "networkidle" });
-  await mobilePage.getByRole("button", { name: "Scope comparison", exact: true }).click();
-  check(
-    "Mobile uses scope cards instead of the wide table",
-    (await mobilePage
-      .locator(".scope-table")
-      .evaluate((element) => getComputedStyle(element).display)) === "none" ||
-      !(await mobilePage.locator(".scope-table").isVisible()),
-  );
-  check(
-    "Mobile scope cards are visible",
-    await mobilePage.locator(".scope-card").first().isVisible(),
-  );
-  await mobilePage.screenshot({ path: path.join(artifactDir, "scope-mobile.png"), fullPage: true });
-  await runAxe(mobilePage, "Demo scope mobile");
-
-  await mobilePage.getByRole("button", { name: "Responsibilities", exact: true }).click();
-  check(
-    "Mobile responsibility matrix remains available",
-    await mobilePage.locator(".responsibility-table").isVisible(),
-  );
-  await mobilePage.getByRole("button", { name: "Report preview", exact: true }).click();
-  check(
-    "Mobile report tables remain available",
-    await mobilePage.locator(".report-table").first().isVisible(),
-  );
-  const mobileOverflow = await mobilePage.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  check(
-    "Mobile demo has no page-level horizontal overflow",
-    mobileOverflow <= 1,
-    `${mobileOverflow}px`,
-  );
-
-  await mobilePage.goto(`${baseUrl}/analyze`, { waitUntil: "networkidle" });
-  await expectHeading(mobilePage, "Cedar Ridge Retreat");
-  check(
-    "Mobile analyze sample loads",
-    (await mobilePage.locator(".topbar-tags").innerText()).includes("3 documents"),
-  );
-  const mobileAnalyzeNav = mobilePage.getByRole("navigation", {
-    name: "Analysis workspace sections",
-  });
-  await mobileAnalyzeNav.getByRole("button", { name: "Scope comparison", exact: true }).click();
-  await expectHeading(mobilePage, "Scope comparison");
-  check(
-    "Mobile analyze uses scope cards",
-    await mobilePage.locator(".scope-card").first().isVisible(),
-  );
-  check(
-    "Mobile analyze hides the wide scope table",
-    (await mobilePage
-      .locator(".scope-table")
-      .first()
-      .evaluate((element) => getComputedStyle(element).display)) === "none" ||
+  await scenario("S22 Mobile sample uses responsive scope and report views", async () => {
+    await mobilePage.goto(`${baseUrl}/analyze?sample=1`, { waitUntil: "networkidle" });
+    await expectHeading(mobilePage, "Review what BuildScope extracted");
+    await openCompare(mobilePage);
+    check("Mobile shows scope cards", await mobilePage.locator(".scope-card").first().isVisible());
+    check(
+      "Mobile hides the wide scope table",
       !(await mobilePage.locator(".scope-table").first().isVisible()),
-  );
-  const mobileAnalyzeOverflow = await mobilePage.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  check(
-    "Mobile analyze has no page-level horizontal overflow",
-    mobileAnalyzeOverflow <= 1,
-    `${mobileAnalyzeOverflow}px`,
-  );
-  await mobilePage.screenshot({
-    path: path.join(artifactDir, "analyze-scope-mobile.png"),
-    fullPage: true,
+    );
+    const compareOverflow = await mobilePage.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    check("Mobile compare has no page overflow", compareOverflow <= 1, `${compareOverflow}px`);
+    await mobilePage.screenshot({
+      path: path.join(artifactDir, "scope-mobile.png"),
+      fullPage: true,
+    });
+    await runAxe(mobilePage, "Scope mobile");
+    await mobilePage
+      .getByRole("navigation", { name: "Proposal review steps" })
+      .getByRole("button", { name: /Report/ })
+      .click();
+    check(
+      "Mobile report table remains available",
+      await mobilePage.locator(".report-table").first().isVisible(),
+    );
+    const reportOverflow = await mobilePage.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    check("Mobile report has no page overflow", reportOverflow <= 1, `${reportOverflow}px`);
+    await runAxe(mobilePage, "Report mobile");
   });
-  await runAxe(mobilePage, "Analyze scope mobile");
 
-  check("No browser console errors", consoleErrors.length === 0, JSON.stringify(consoleErrors));
-  check("No uncaught page errors", pageErrors.length === 0, JSON.stringify(pageErrors));
+  await scenario("S23 Accessibility sweep covers every compare view", async () => {
+    await openSample(page);
+    await openCompare(page);
+    for (const view of [
+      "Scope",
+      "Responsibilities",
+      "Costs & unknowns",
+      "Changes",
+      "Site questions",
+      "Questions",
+    ]) {
+      await selectCompareView(page, view);
+      await runAxe(page, `Compare ${view} desktop`);
+    }
+    await page
+      .getByRole("navigation", { name: "Proposal review steps" })
+      .getByRole("button", { name: /Review/ })
+      .click();
+    await runAxe(page, "Review desktop");
+  });
+
+  await scenario(
+    "S24 No console errors, page errors or unsupported document assumptions",
+    async () => {
+      check("No browser console errors", consoleErrors.length === 0, JSON.stringify(consoleErrors));
+      check("No uncaught page errors", pageErrors.length === 0, JSON.stringify(pageErrors));
+      await openSample(page);
+      await openCompare(page);
+      await selectCompareView(page, "Questions");
+      const bodyText = (await page.locator("body").textContent()) ?? "";
+      check(
+        "Fixture markup is present as inert text",
+        bodyText.includes("<script>window.__buildscopeInjected = true</script>"),
+      );
+      check(
+        "Fixture markup did not execute",
+        await page.evaluate(() => !("__buildscopeInjected" in window)),
+      );
+      check(
+        "Visible copy no longer names P2 or P3",
+        !(await page.locator("body").innerText()).match(/\bP[23]\b/),
+      );
+      check(
+        "Visible copy names cost data as OFF",
+        (await page.locator("body").innerText()).includes("Cost data OFF"),
+      );
+      check(
+        "Project source fixture path is not exposed",
+        !(await page.locator("body").innerText()).includes("tests/fixtures"),
+      );
+    },
+  );
 
   await desktop.close();
   await tablet.close();

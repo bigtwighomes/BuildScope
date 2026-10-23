@@ -1,120 +1,102 @@
 # Status
 
-- **Last updated:** 2026-10-20
+- **Last updated:** 2026-10-22
 - **Authoritative specification:** `masterprompt.md` v1.0 (research baseline 2026-10-20)
 - **Master prompt SHA-256:** `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391` (unchanged)
-- **Active phase:** P3 deterministic document-intelligence lab (synthetic, no AI), with P2 owner acceptance still pending
-- **Overall status:** P0 `LOCALLY VERIFIED`; P1 research `LOCALLY VERIFIED` with licensing and REA setup `BLOCKED`; P2 `LOCALLY VERIFIED` including browser/accessibility automation, owner review pending; P3 deterministic slice `IMPLEMENTED / LOCALLY VERIFIED`, while AI extraction and the commercial P3 gate are `BLOCKED`
-- **Product status:** Synthetic P2 walkthrough and synthetic text-PDF lab only. Uploads are processed in memory and discarded. No AI, OCR, persistence, accounts, payments, entitlements, licensed cost data, report delivery or live integration exists.
+- **Active phase:** unified synthetic five-step proposal review, with the deterministic document lab retained
+- **Overall status:** P0 `LOCALLY VERIFIED`; P1 research `LOCALLY VERIFIED` with licensing and REA setup `BLOCKED`; unified product UX `LOCALLY VERIFIED` with owner review pending; deterministic P3 slice `IMPLEMENTED / LOCALLY VERIFIED`; P4 local change and screening support `PARTIAL`; commercial P3 and all paid/production paths `BLOCKED`
+- **Product status:** Synthetic five-step review only. Uploads are processed in memory and discarded. Corrections and customer-entered changes exist only in the browser session. No AI, OCR, persistence, accounts, payments, entitlements, licensed cost data, live screening, report delivery or deployment exists.
 
 ## Phase ledger
 
-| Phase                                 | Status                                                   | Evidence                                                                                                                                                                                                             |
-| ------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P0 Foundation / repository            | LOCALLY VERIFIED                                         | Baseline commands, safety gates and docs verified 2026-10-20. See `docs/tests/TEST_RESULTS.md`.                                                                                                                      |
-| P1 Research and feasibility           | LOCALLY VERIFIED (setup/licensing BLOCKED)               | `COMPETITOR_MATRIX.md`, `REA_EVIDENCE.md`, `CRAFTSMAN_LICENSE.md`, `DATA_SOURCE_REGISTER.md`, `MARKET_OPPORTUNITIES.md`, `PRICING_AND_UNIT_ECONOMICS.md`, `SCOPE_AND_MVP.md`.                                        |
-| P2 Minimal original product UX        | LOCALLY VERIFIED (owner acceptance pending)              | `/` landing and `/demo` workspace with eight views, filters, evidence drilldown, changes, unknowns and printable report. P2/P3 browser suite passes; owner review not recorded.                                      |
-| P3 Core document intelligence         | PARTIAL (deterministic lab LOCALLY VERIFIED; AI BLOCKED) | `/analyze` and `/api/analyze` validate synthetic text PDFs, extract line items, produce evidence-linked comparisons, responsibilities, arithmetic and corrections. No AI/OCR, no real documents, no durable storage. |
-| P4 Change orders and risk/disclosures | PARTIAL DEMO                                             | Changes view and risk placeholders exist in the synthetic demo; no real document handling, revision workflow or disclosure engine.                                                                                   |
-| P5 Free public source integrations    | NOT STARTED                                              | Reachability recorded; no adapter, cache, terms review or contract test.                                                                                                                                             |
-| P6 Reference cost adapter             | BLOCKED                                                  | No commercial license or written data rights. Cost data defaults OFF; demo ranges are visibly synthetic.                                                                                                             |
-| P7 Commercial workflow and reporting  | BLOCKED                                                  | Stripe not implemented; no accounts, entitlements, secure delivery or server-side PDF. Browser print only. Live payments not approved.                                                                               |
-| P8 Security, legal and paid pilot     | PLANNED / BLOCKED                                        | Counsel review not performed; no real-document processing; no deployment or security review.                                                                                                                         |
-| P9 Later expansion                    | PLANNED                                                  | Not justified by paid demand.                                                                                                                                                                                        |
+| Phase                                 | Status                                                   | Evidence                                                                                                                                                                                                              |
+| ------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0 Foundation / repository            | LOCALLY VERIFIED                                         | Baseline commands, safety gates and docs verified 2026-10-20. See `docs/tests/TEST_RESULTS.md`.                                                                                                                       |
+| P1 Research and feasibility           | LOCALLY VERIFIED (setup/licensing BLOCKED)               | `COMPETITOR_MATRIX.md`, `REA_EVIDENCE.md`, `CRAFTSMAN_LICENSE.md`, `DATA_SOURCE_REGISTER.md`, `MARKET_OPPORTUNITIES.md`, `PRICING_AND_UNIT_ECONOMICS.md`, `SCOPE_AND_MVP.md`.                                         |
+| P2 Minimal original product UX        | LOCALLY VERIFIED (owner acceptance pending)              | `/` landing and `/analyze` five-step workspace: project setup, uploads, review, comparison and report. `/demo` redirects to `/analyze?sample=1`.                                                                      |
+| P3 Core document intelligence         | PARTIAL (deterministic lab LOCALLY VERIFIED; AI BLOCKED) | Bounded text-PDF intake, deterministic extraction, evidence-linked comparison, responsibilities, arithmetic, corrections and printable report. No AI/OCR, real documents or durable storage.                          |
+| P4 Change orders and risk/disclosures | PARTIAL                                                  | Customer-reported change arithmetic, explicit unknown exposure and sourced `not_evaluated` site questions exist locally. No verified change-order extraction, revision workflow, live screening or disclosure engine. |
+| P5 Free public source integrations    | NOT STARTED                                              | Reachability recorded; no adapter, cache, terms review or contract test.                                                                                                                                              |
+| P6 Reference cost adapter             | BLOCKED                                                  | No commercial license or written data rights. Cost data defaults OFF.                                                                                                                                                 |
+| P7 Commercial workflow and reporting  | BLOCKED                                                  | Stripe not implemented; no accounts, entitlements, secure delivery or server-side PDF. Browser print only. Live payments not approved.                                                                                |
+| P8 Security, legal and paid pilot     | PLANNED / BLOCKED                                        | Counsel review not performed; no real-document processing; no deployment or independent security review.                                                                                                              |
+| P9 Later expansion                    | PLANNED                                                  | Not justified by paid demand.                                                                                                                                                                                         |
 
-P3 entry criteria in `docs/product/SCOPE_AND_MVP.md` were not met: the owner has not accepted the P2 walkthrough, no AI provider has been approved, and no real-document privacy/retention design exists. The deterministic slice is therefore a bounded synthetic lab, not authorization to open the commercial P3 gate.
+P3 entry criteria in `docs/product/SCOPE_AND_MVP.md` remain unmet: the owner has not accepted the walkthrough, no AI provider has been approved, and no real-document privacy/retention design exists. The deterministic slice is a bounded synthetic lab, not authorization to open the commercial P3 gate.
 
-## P1 deliverables
+## Current product deliverables
 
-| Item                                  | Requirement      | Status                                    | Evidence                                                                                        |
-| ------------------------------------- | ---------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Competitor matrix                     | REQ-030          | LOCALLY VERIFIED (public pages only)      | `docs/research/COMPETITOR_MATRIX.md`, retrieved 2026-10-20, labeled claims.                     |
-| REA evaluation                        | REQ-030          | EVALUATED, NOT INSTALLED                  | `docs/research/REA_EVIDENCE.md`; Node 25.6.1 not in documented support list; no setup executed. |
-| Craftsman API shape                   | REQ-300, REQ-301 | VERIFIED API SHAPE; PRICE BLOCKED         | `docs/research/CRAFTSMAN_LICENSE.md`; `nec-api.json` endpoints and sandbox/production recorded. |
-| Craftsman inquiry draft               | REQ-301          | DRAFTED, NOT SENT                         | `docs/research/CRAFTSMAN_LICENSE.md`.                                                           |
-| Public data register                  | REQ-320          | REACHABILITY VERIFIED; ACTIVATION BLOCKED | `docs/research/DATA_SOURCE_REGISTER.md`; Census/FEMA/EPQS reachable; no adapter.                |
-| Market differentiation hypothesis     | REQ-010-REQ-012  | LOCALLY VERIFIED AS HYPOTHESIS            | `docs/research/MARKET_OPPORTUNITIES.md`.                                                        |
-| Pricing and unit-economics hypothesis | REQ-011, REQ-610 | LOCALLY VERIFIED AS HYPOTHESIS            | `docs/research/PRICING_AND_UNIT_ECONOMICS.md`; no viability claim.                              |
-| MVP boundary                          | REQ-001, REQ-800 | DEFINED                                   | `docs/product/SCOPE_AND_MVP.md`.                                                                |
-
-## P2 deliverables
-
-| Item                               | Requirement      | Status                                | Evidence                                                                                         |
-| ---------------------------------- | ---------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Landing page and demo report entry | REQ-500          | LOCALLY VERIFIED                      | `src/app/page.tsx`; HTTP 200 smoke test; demo CTA and disclaimers present.                       |
-| Interactive demo workspace         | REQ-500, REQ-102 | LOCALLY VERIFIED                      | `src/app/demo/page.tsx`, `src/components/demo/*`; HTTP 200; eight sections.                      |
-| Scope comparison and evidence      | REQ-102, REQ-103 | LOCALLY VERIFIED                      | Seven statuses, filters, search, expandable evidence with document/page/span.                    |
-| Responsibility matrix              | REQ-102          | LOCALLY VERIFIED                      | Eight responsibility entries; "Not stated" preserved as a finding.                               |
-| Known / planning / unknown         | REQ-210          | LOCALLY VERIFIED                      | Three separated sections; synthetic ranges labeled; "no defensible localized range" shown.       |
-| Change-order impact                | REQ-212          | LOCALLY VERIFIED (demo)               | Five changes across draft/requested/quoted/approved/rejected; unknown fee exposure shown.        |
-| Findings and questions             | REQ-102          | LOCALLY VERIFIED                      | Evidence-linked findings; checklist-only finding has no fabricated evidence.                     |
-| Printable report preview           | REQ-510          | PARTIAL                               | Browser print works; server PDF, entitlement and delivery are PLANNED and gated.                 |
-| Synthetic fixture and tests        | REQ-700          | LOCALLY VERIFIED                      | `src/lib/demo/*`, `tests/unit/demo-analysis.test.ts`; P2/P3 total is 51 tests.                   |
-| Browser/accessibility walkthrough  | REQ-500          | LOCALLY VERIFIED (automated Edge run) | `npm run verify:browser`; axe WCAG 2.1 A/AA, keyboard focus/tab order, mobile/tablet, print PDF. |
-| Owner review                       | REQ-500          | PENDING                               | No owner acceptance recorded.                                                                    |
-
-## P3 deterministic lab deliverables
-
-| Item                         | Requirement      | Status           | Evidence                                                                                                                                            |
-| ---------------------------- | ---------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Upload and intake validation | REQ-100, REQ-600 | LOCALLY VERIFIED | Three-file/8 MiB request, 4 MiB/file, PDF magic, duplicate SHA-256, empty/encrypted/image-only/oversized rejection, in-memory only.                 |
-| Native PDF text extraction   | REQ-100          | LOCALLY VERIFIED | `unpdf`/PDF.js `extractText` per page; page count, text-size and timeout limits; document cleanup. No OCR.                                          |
-| Typed parsing                | REQ-101, REQ-102 | LOCALLY VERIFIED | `parse.ts` extracts project, bidders, pricing basis, line items, allowances, exclusions, specs, responsibilities and terms from synthetic fixtures. |
-| Evidence contract            | REQ-103          | LOCALLY VERIFIED | Every extracted fact and line item carries document/page/section/span; findings omit evidence rather than fabricate it.                             |
-| Deterministic comparison     | REQ-102          | LOCALLY VERIFIED | Seven statuses across 17 scope areas; source explanations and evidence; all 51 fixture status cells match expected ground truth.                    |
-| Responsibility matrix        | REQ-102          | LOCALLY VERIFIED | Eight responsibilities across three bidders, each with party, source and evidence.                                                                  |
-| Financial arithmetic         | REQ-210, REQ-105 | LOCALLY VERIFIED | Integer-cent decimal parsing; subtotal, tax, expected/ stated/ calculated total and delta; unknown never becomes zero.                              |
-| Reviewer corrections         | REQ-103          | LOCALLY VERIFIED | Price, basis, allowances, exclusions, spec, party and line-category corrections; audit log; original evidence preserved.                            |
-| Prompt-injection defense     | REQ-103, REQ-600 | LOCALLY VERIFIED | Instruction-like source text is treated as evidence and reported as findings; browser test confirms injected markup does not execute.               |
-| API                          | REQ-100          | LOCALLY VERIFIED | `POST /api/analyze`, `POST /api/analyze/sample`; raw `Analysis` JSON; `Cache-Control: no-store`; sanitized errors.                                  |
-| Review and report UI         | REQ-103, REQ-510 | LOCALLY VERIFIED | `/analyze` with Overview, Documents, Scope comparison, Responsibilities, Costs, Findings and Report; evidence drilldown, copy question and print.   |
-| Synthetic fixtures           | REQ-700          | LOCALLY VERIFIED | Northline, Cascade and Sagebrush PDFs plus image-only and encrypted rejection fixtures under `tests/fixtures/synthetic/`.                           |
-| Automated tests              | REQ-700          | LOCALLY VERIFIED | 4 P3-focused test files plus the existing P0/P2 suites: 6 files, 51 tests.                                                                          |
-| Browser/accessibility lab    | REQ-500, REQ-700 | LOCALLY VERIFIED | P2/P3 Edge suite: 84/84 checks, axe WCAG 2.1 A/AA, desktop/tablet/mobile, upload rejection, corrections, reset and print PDF.                       |
-| Real-document handling       | REQ-600          | BLOCKED          | Synthetic fixtures only; no owner permission, retention design or security review.                                                                  |
-| AI extraction                | REQ-104          | BLOCKED          | No approved provider, data-rights review or measured accuracy; implementation is intentionally deterministic.                                       |
+| Item                             | Requirement      | Status                       | Evidence                                                                                                                                                                                         |
+| -------------------------------- | ---------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Landing and entry points         | REQ-500          | LOCALLY VERIFIED             | `/` with start-review and synthetic-example links; `/demo` compatibility redirect; no hidden demo dependency.                                                                                    |
+| Five-step review workspace       | REQ-101, REQ-500 | LOCALLY VERIFIED             | Project, Documents, Review, Compare, Report; browser history and step gating work.                                                                                                               |
+| Project types                    | REQ-012          | LOCALLY VERIFIED (SYNTHETIC) | New home, materials package/kit and bathroom renovation, each with a project-specific scope library and notes.                                                                                   |
+| Bounded upload                   | REQ-100, REQ-600 | LOCALLY VERIFIED             | Streamed 8 MiB request limit, 3 files, 4 MiB/file, PDF magic, duplicate hashes, page/text/extraction limits, named rejections.                                                                   |
+| Native text extraction           | REQ-100          | LOCALLY VERIFIED             | `unpdf`/PDF.js per-page text; no OCR; partial pages marked unreadable; bounded timeout.                                                                                                          |
+| Typed deterministic parsing      | REQ-101, REQ-102 | LOCALLY VERIFIED (SYNTHETIC) | Project, bidder, pricing basis, line items, allowances, exclusions, specifications and responsibilities from synthetic templates.                                                                |
+| Evidence contract                | REQ-103          | LOCALLY VERIFIED             | Extracted facts and line items carry document/page/section/line/span; silent cells carry no evidence.                                                                                            |
+| Scope comparison                 | REQ-102          | LOCALLY VERIFIED (SYNTHETIC) | Seven statuses; project-specific categories plus observed categories; filters and evidence drilldown.                                                                                            |
+| Responsibility matrix            | REQ-102          | LOCALLY VERIFIED             | Eight responsibility roles across bidders with party, source and evidence.                                                                                                                       |
+| Financial reconciliation         | REQ-105, REQ-210 | LOCALLY VERIFIED (SYNTHETIC) | Integer-cent subtotal, tax, expected/stated/calculated totals, deltas, allowances and excluded scope; unknown tax treatment is insufficient data, not a discrepancy; unknown never becomes zero. |
+| Change review                    | REQ-212          | PARTIAL                      | Session-only customer-entered additions, credits, fee percentage, fixed fee and schedule; negative money inputs rejected; unknown exposure remains visible.                                      |
+| Site and project questions       | REQ-322, REQ-400 | PARTIAL                      | Sourced `not_evaluated` checklist for flood, permits, radon, contractor, moisture and ventilation; project location retained in the analysis; no live lookup or conclusion.                      |
+| Findings and questions           | REQ-102          | LOCALLY VERIFIED (SYNTHETIC) | Priority-sorted evidence-linked findings and checklist-only questions; no fabricated citations.                                                                                                  |
+| Review corrections               | REQ-103          | LOCALLY VERIFIED             | Price, basis, allowances, exclusions, specifications, parties and line categories; audit log; source evidence preserved.                                                                         |
+| Rejection reasons                | REQ-600          | LOCALLY VERIFIED             | Review view lists named document rejection reasons when no document or only some documents pass validation.                                                                                      |
+| Provenance                       | REQ-413          | LOCALLY VERIFIED             | Uploads are `user-upload-unverified`; sample is `bundled-synthetic-fixture`; cost mode is `OFF`; IDs use `DOC-*` or `SAMPLE-*`.                                                                  |
+| Report                           | REQ-510          | PARTIAL                      | Eight-section evidence-linked report with changes, site questions, source/version/limitations and limitations; browser print/save only.                                                          |
+| Security headers                 | REQ-600          | LOCALLY VERIFIED             | nosniff, frame denial, no-referrer, permissions policy, COOP, CORP and CSP framing/object restrictions.                                                                                          |
+| Prompt-injection defense         | REQ-103, REQ-600 | LOCALLY VERIFIED             | Instruction-like source text is evidence only; browser checks confirm markup does not execute.                                                                                                   |
+| Landing/product copy             | REQ-010, REQ-410 | LOCALLY VERIFIED             | Homeowner language, visible limitations and no active-cost/payment claims.                                                                                                                       |
+| Automated unit/integration tests | REQ-700          | LOCALLY VERIFIED             | 6 files / 46 tests covering gates, money, changes/risks, extraction, intake, evidence, corrections and API behavior.                                                                             |
+| Browser/accessibility suite      | REQ-500, REQ-700 | LOCALLY VERIFIED             | 24 production scenarios / 125 checks in Edge; axe WCAG 2.1 A/AA, keyboard, tablet/mobile, print PDF, security headers and rejection flows.                                                       |
+| Real-document handling           | REQ-600          | BLOCKED                      | Synthetic fixtures only; no owner permission, retention design or security review.                                                                                                               |
+| AI extraction                    | REQ-104          | BLOCKED                      | No approved provider, data-rights review or measured accuracy; implementation remains deterministic.                                                                                             |
+| Owner review                     | REQ-500          | PENDING                      | Owner acceptance of the unified walkthrough is not recorded.                                                                                                                                     |
 
 ## Verification summary
 
-- `npm run verify` passed on 2026-10-20: Prettier check, ESLint, TypeScript strict check, **6 test files / 51 tests**, and production build.
-- Build routes: `/`, `/_not-found`, `/analyze` (dynamic), `/api/analyze` (dynamic), `/api/analyze/sample` (dynamic), `/demo`, `/icon.svg`.
-- Static production server smoke test returned HTTP 200 for `/`, `/demo` and `/analyze`.
-- `npm run verify:browser` passed **84/84 checks** against `http://127.0.0.1:3000` using installed Edge. Includes axe WCAG 2.1 A/AA on landing, P2, P3, upload/correction/reset, report print PDFs (P2 89,465 bytes; P3 353,696 bytes), keyboard focus/tab order, tablet/mobile reflow and no console/page errors.
-- P2 print and P3 report print are browser PDFs; no server-side PDF generation exists.
-- Sample API verified: 3 documents, 0 rejections, 21 findings, 20 findings with evidence, 131 evidence references, 51 comparison cells, arithmetic `[matches, matches, discrepancy]` with `$2,500.00` delta.
-- Fixture ground truth verified: Northline total `$486,540.00`; Cascade materials total `$209,200.00`; Sagebrush calculated total `$505,662.40` versus stated `$508,162.40`.
-- Upload route verified with three synthetic PDFs: HTTP 200 and 94,957-byte analysis response. Image-only and encrypted fixtures are accepted as documents but produce zero findings and explicit `NO_TEXT` / `ENCRYPTED` rejections.
+- `npm run verify` re-run on 2026-10-22: Prettier check, ESLint, TypeScript strict check, **6 test files / 46 tests**, and production build all pass.
+- Build routes: `/`, `/_not-found`, `/demo` and `/icon.svg` static; `/analyze`, `/api/analyze` and `/api/analyze/sample` dynamic.
+- `npm run verify:browser` passed **125/125 checks** against a self-started production server on `http://127.0.0.1:3117` using installed Microsoft Edge.
+- Browser coverage includes the five-step flow, empty and sample routes, legacy redirect, PDF rejection reasons, reviewer corrections/reset, scope filters and evidence, responsibility matrix, costs and the `$2,500.00` discrepancy, changes, site questions, copy question, report print, start over, security headers, streamed 413 rejection, keyboard focus, tablet/mobile reflow, axe WCAG 2.1 A/AA and no unexpected console/page errors.
+- Print artifact: `artifacts/browser-check/report-print.pdf`, approximately 360 KB; the byte count varies with PDF metadata.
+- Fixture ground truth: Northline `$486,540.00`; Cascade `$209,200.00`; Sagebrush calculated `$505,662.40` versus stated `$508,162.40` (difference `$2,500.00`); Willow `$40,957.50`; Harbor `$27,700.00`.
+- Bathroom fixture ground truth: waterproofing and ventilation are `INCLUDED` for Willow and `EXCLUDED` for Harbor; sitework is not part of the bathroom comparison.
+- Sample API: 3 documents, 0 rejections, 21 findings, 20 findings with evidence, 32 line items and `SAMPLE-*` provenance.
+- Upload API: streamed request-body enforcement returns 413 for oversized bodies; image-only and encrypted files produce `NO_TEXT` / `ENCRYPTED` rejections and no accepted documents.
 - Master prompt SHA-256 unchanged.
-- Initial commit `c05924b` pushed to https://github.com/bigtwighomes/BuildScope on `main`. GitHub Actions CI run `39514336718` passed format, lint, typecheck, 51 tests and production build on Ubuntu/Node 24.
+- HEAD remains `8398425`; the 2026-10-22 changes are currently uncommitted, so no new CI run exists.
 - No deployment exists; GitHub hosts the source repository only.
 
 ## Unresolved problems and limitations
 
-- **P2/P3 owner acceptance:** not recorded. Automated browser checks are not a substitute for owner product review.
-- **Commercial P3 gate:** BLOCKED. P3 entry criteria require owner acceptance, an approved AI provider, and privacy/retention design before real documents or AI extraction.
-- **Security scope:** `/api/analyze` has no authentication, authorization, CSRF/origin policy or rate limiting. It is a local synthetic lab, not an internet-facing service.
-- **Request-body enforcement:** the 8 MiB request limit is checked after Next.js parses the multipart form. A streaming or reverse-proxy body limit has not been verified.
-- **Extraction timeout:** the request stops waiting at the timeout, but the underlying PDF.js work is not synchronously cancelled; cleanup runs when work settles.
-- **Sample route packaging:** `/analyze` and `/api/analyze/sample` read fixtures from `tests/fixtures/synthetic` at runtime. This works from the repository with `next start` but is not a deployment packaging strategy.
-- **OCR and image PDFs:** unsupported by design; image-only PDFs produce an explicit rejection. No OCR accuracy or safety claim is made.
-- **No durable state:** corrections and analyses exist in browser memory only; refresh discards them. No accounts, database, file storage or retention schedule.
-- **No AI:** extraction and comparison are deterministic parsers for the synthetic templates. They are not demonstrated on arbitrary vendor PDFs.
-- **Commercial cost data:** BLOCKED. No written Craftsman quote or redistribution rights. Demo plan ranges are synthetic.
+- **Owner acceptance:** not recorded. Automated browser checks are not a substitute for owner product review.
+- **Commercial P3 gate:** BLOCKED. Entry criteria require owner acceptance, an approved AI provider, and privacy/retention design before real documents or AI extraction.
+- **Authentication and abuse controls:** `/api/analyze` has no authentication, authorization, origin policy or rate limiting. It remains a local synthetic lab, not an internet-facing service.
+- **No durable state:** analyses, corrections, customer-entered changes and report state exist in browser memory only; refresh discards them. No accounts, database, file storage or retention schedule.
+- **PDF timeout:** the request stops waiting at the timeout and destroys the document when it becomes available, but a `getDocumentProxy` promise that never settles cannot be synchronously cancelled.
+- **Parser scope:** deterministic parsers are built for the generated templates. Arbitrary vendor PDFs, OCR and image-only documents are unsupported.
+- **No planning ranges:** known proposal amounts and unknown/excluded scope are separated, but the three-way planning-estimate layer and localized ranges are not implemented.
+- **Changes and site questions:** changes are customer-reported session notes, not verified change orders. Site questions are sourced checklist items with no geocoding, screening or legal conclusion.
+- **No AI:** extraction and comparison are deterministic. No model accuracy or arbitrary-document performance is claimed.
+- **Commercial cost data:** BLOCKED. No written Craftsman quote or redistribution rights. No paid data is present.
 - **REA:** not installed. Local Node v25.6.1 is outside the documented support list, and setup modifies agent configuration.
 - **Legal review:** BLOCKED. Terms, privacy, liability, refunds and disclosure text are drafts.
-- **CI:** workflow exists but has never run; no remote.
+- **CI:** GitHub Actions run `39514595890` passed on commit `8398425`; the workflow has no remote Edge browser job and the current working tree has not been pushed.
 - **Development advisory:** 5 high-severity `braces` advisories in the lint toolchain; production dependencies are clean; no safe non-breaking fix was applied.
 - **ESLint 9 deprecation:** retained because `eslint-plugin-react` peer support stops at ESLint 9.
-- **Remote repository:** published at https://github.com/bigtwighomes/BuildScope. The initial commit and CI result are recorded in `docs/tests/TEST_RESULTS.md`.
+- **Sample packaging:** sample PDFs live under `fixtures/samples/`; this is a repository/source deployment strategy, not a package artifact.
 
 ## Decisions requiring owner authorization
 
-- Accept, revise or reject the P2 walkthrough and the bounded P3 deterministic lab.
+- Accept, revise or reject the unified five-step synthetic walkthrough and the bounded P3 deterministic lab.
 - Decide whether to continue toward commercial P3 with an approved AI provider and security/retention design, or stop the lab here.
 - Authorize or decline any `rea-agents setup` execution (also resolve the Node support question).
 - Approve or reject sending the prepared Craftsman inquiry.
-- Approve any commercial data license, live payment mode, deployment, remote push or real-document processing.
+- Approve any commercial data license, live payment mode, deployment, public release or real-document processing.
+- Authorize committing and pushing the current verified working tree.
 
 ## Conclusion
 
-**P0, P1, P2 and the deterministic P3 lab are LOCALLY VERIFIED to the extent possible without owner approvals, a real AI provider, licensed cost data, real documents or deployment.** The product remains synthetic and non-commercial. The full P3 gate and every paid/production path remain blocked pending explicit owner decisions.
+**P0, P1, the unified synthetic five-step product and the deterministic P3 lab are LOCALLY VERIFIED to the extent possible without owner approvals, a real AI provider, licensed cost data, real documents or deployment.** The product remains synthetic and non-commercial. Full P3, P4 integrations and every paid/production path remain blocked pending explicit owner decisions.

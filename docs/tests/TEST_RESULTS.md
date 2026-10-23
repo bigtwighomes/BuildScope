@@ -2,90 +2,119 @@
 
 ## Environment
 
-- Date: 2026-10-20
+- Date: 2026-10-22
 - OS: Windows (win32)
-- Shell: PowerShell 7 / `curl.exe` for FEMA TLS
+- Shell: PowerShell 7
 - Node.js: v25.6.1 (local; non-LTS)
 - npm: 11.9.0
 - Project root: repository checkout (local Windows run)
-- Repository: https://github.com/bigtwighomes/BuildScope, branch `main`, initial commit `c05924b`
+- Repository: https://github.com/bigtwighomes/BuildScope, branch `main`, HEAD `8398425`
+- Working tree: current verified changes are uncommitted
+- Browser: installed Microsoft Edge
 - Master prompt SHA-256: `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`
 
-## Final P0-P3 verification (2026-10-20)
+## Current verification (2026-10-22)
 
 Command: `npm run verify`
 
-| Stage          | Actual                                                                                                                                         | Status |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `format:check` | All matched files use Prettier code style                                                                                                      | PASS   |
-| `lint`         | ESLint completed with no findings                                                                                                              | PASS   |
-| `typecheck`    | `tsc --noEmit` completed                                                                                                                       | PASS   |
-| `test`         | 6 files, 51 tests passed (`config` 8, `documents-money` 6, `demo-analysis` 11, `documents-analysis` 11, `analyze-api` 8, `documents-intake` 7) | PASS   |
-| `build`        | Next.js 16.4.2 production build; `/`, `/_not-found`, `/demo`, `/icon.svg` static; `/analyze` and both APIs dynamic                             | PASS   |
+| Stage          | Actual                                                                                                                                            | Status |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `format:check` | All matched files use Prettier code style                                                                                                         | PASS   |
+| `lint`         | ESLint completed with no findings                                                                                                                 | PASS   |
+| `typecheck`    | `tsc --noEmit` completed                                                                                                                          | PASS   |
+| `test`         | 6 files, 46 tests passed (`config` 8, `documents-money` 6, `documents-changes` 5, `documents-analysis` 11, `analyze-api` 8, `documents-intake` 8) | PASS   |
+| `build`        | Next.js 16.4.2 production build; `/`, `/_not-found`, `/demo`, `/icon.svg` static; `/analyze` and both APIs dynamic                                | PASS   |
 
-Static production server smoke test (`npm start`, port 3000):
+Browser command: `npm run verify:browser`
 
-| Check                            | Actual                                                                       | Status |
-| -------------------------------- | ---------------------------------------------------------------------------- | ------ |
-| `/` responds                     | HTTP `200`                                                                   | PASS   |
-| `/demo` responds                 | HTTP `200`                                                                   | PASS   |
-| `/analyze` responds              | HTTP `200`, 103,436 bytes                                                    | PASS   |
-| Analyze sample renders           | Sample workspace present                                                     | PASS   |
-| `POST /api/analyze/sample`       | HTTP `200`; 3 docs, 21 findings, 131 evidence refs, 17 rows                  | PASS   |
-| `POST /api/analyze` (3 fixtures) | HTTP `200`, 94,957-byte analysis JSON                                        | PASS   |
-| `Cache-Control` on analysis APIs | `no-store`                                                                   | PASS   |
-| Master prompt SHA-256            | `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391` unchanged | PASS   |
+The harness builds the application, starts `next start` on `http://127.0.0.1:3117`, runs 24 scenarios, and stops the server.
 
-## P3 ground-truth verification
+| Check                    | Actual                                                                                                | Status |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- | ------ |
+| Full Edge browser suite  | `125/125 checks passed`                                                                               | PASS   |
+| Five-step flow           | Project, documents, review, compare and report steps are reachable and gated correctly                | PASS   |
+| Landing and legacy route | Landing 200; `/demo` redirects to `/analyze?sample=1`; demo navigation removed                        | PASS   |
+| Project setup            | New-home, bathroom and materials-package types persist into the documents step                        | PASS   |
+| Sample review            | 3 documents, 32 line items and synthetic provenance visible                                           | PASS   |
+| Corrections              | Pricing-basis correction marks the document, logs the change and resets cleanly                       | PASS   |
+| Scope comparison         | Project-aware rows, needs-review filter and evidence drilldown work                                   | PASS   |
+| Responsibility matrix    | Contractor/owner roles remain populated                                                               | PASS   |
+| Costs and unknowns       | `$486,540.00`, `$508,162.40`, `$2,500.00` difference and `Cost data OFF` visible                      | PASS   |
+| Changes                  | Two sample changes; new change computes `$930.00`; unknown exposure stays visible; removal works      | PASS   |
+| Site questions           | Sourced cards remain `Not evaluated`; sample location carried; external links use `noreferrer`        | PASS   |
+| Questions                | Copy-question feedback is announced and clipboard content is populated                                | PASS   |
+| Prompt-injection markup  | Fixture `<script>` text is present as inert text; `window.__buildscopeInjected` remains unset         | PASS   |
+| Report                   | Eight sections, inline evidence, print CSS, `artifacts/browser-check/report-print.pdf` (about 360 KB) | PASS   |
+| Start over               | Clears documents, returns to step 1 and restores safe defaults                                        | PASS   |
+| Upload rejection         | Image-only and encrypted files show named rejection reasons; sample reloads                           | PASS   |
+| Bathroom fixtures        | Waterproofing and ventilation compare; no sitework row; Willow `$40,957.50`; Harbor `$27,700.00`      | PASS   |
+| Materials package        | Type persists to the documents step                                                                   | PASS   |
+| Security headers         | nosniff, frame denial, no-referrer and CSP framing/object restrictions present                        | PASS   |
+| Streamed request limit   | Oversized browser upload returns 413                                                                  | PASS   |
+| Keyboard                 | Visible 3px focus outline; sidebar tab order reachable                                                | PASS   |
+| Tablet/mobile            | No page-level horizontal overflow; responsive scope cards replace the wide table                      | PASS   |
+| axe WCAG 2.1 A/AA        | No violations on landing, review, all six compare views, report, tablet or mobile                     | PASS   |
+| Console and page errors  | No unexpected console errors or uncaught page errors                                                  | PASS   |
 
-| Check                                   | Actual                                                                                        | Status |
-| --------------------------------------- | --------------------------------------------------------------------------------------------- | ------ |
-| Northline arithmetic                    | Subtotal `$459,000.00`; 6% tax `$27,540.00`; total `$486,540.00`; matches stated              | PASS   |
-| Cascade arithmetic                      | 8 lines; materials total `$209,200.00`; tax unreported; matches stated                        | PASS   |
-| Sagebrush arithmetic                    | Expected `$505,662.40`; stated `$508,162.40`; discrepancy `$2,500.00`                         | PASS   |
-| Comparison statuses (51 cells)          | All match fixture ground truth, including base/spec conflicts and separately contracted scope | PASS   |
-| Evidence coordinates                    | Every cited document/page/line/span resolves; silent cells carry no evidence                  | PASS   |
-| Prompt injection                        | 2 security findings; instruction text retained as evidence; no execution or prompt leakage    | PASS   |
-| Image-only and encrypted PDFs           | Zero accepted documents and findings; `NO_TEXT` / `ENCRYPTED` rejections                      | PASS   |
-| Partial PDF                             | Page 1 retained; pages 2-3 marked unreadable; affected roofing scope `UNREADABLE`             | PASS   |
-| Duplicate/empty/non-PDF/oversized files | Rejected with `DUPLICATE`, `EMPTY_FILE`, `NOT_PDF`, `FILE_TOO_LARGE`                          | PASS   |
-| Corrected total                         | Recalculates to match and removes arithmetic finding; original remains unchanged              | PASS   |
-| Line-category correction                | Updates comparison cell and records reviewer audit entry, original category preserved         | PASS   |
+Artifacts are gitignored under `artifacts/browser-check/`; `results.json` records the complete check list. The expected 413 response is excluded from the console-error check because the oversized-upload test intentionally triggers it.
 
-## Browser, accessibility and print verification (2026-10-20)
+## Test inventory
 
-Command:
+| File                                           | Tests | Focus                                                                                        |
+| ---------------------------------------------- | ----: | -------------------------------------------------------------------------------------------- |
+| `tests/unit/config.test.ts`                    |     8 | Cost-data and payment gates, production restrictions, secret-safe output                     |
+| `tests/unit/documents-money.test.ts`           |     6 | Integer-cent parsing, formatting and unsafe input                                            |
+| `tests/unit/documents-changes.test.ts`         |     5 | Change arithmetic, unknown exposure, project-specific scope, screening statuses              |
+| `tests/integration/documents-analysis.test.ts` |    11 | Sample ground truth, evidence integrity, findings, corrections and prompt-injection handling |
+| `tests/integration/analyze-api.test.ts`        |     8 | Sample/upload API behavior, provenance, rejection responses and request-size errors          |
+| `tests/integration/documents-intake.test.ts`   |     8 | Bathroom extraction, PDF validation, limits, partial PDFs, duplicate/empty/non-PDF rejection |
 
-```powershell
-$env:BUILDSCOPE_BASE_URL = "http://127.0.0.1:3000"
-npm run verify:browser
-```
+## Ground-truth verification
 
-| Check                               | Actual                                                            | Status |
-| ----------------------------------- | ----------------------------------------------------------------- | ------ |
-| Full P2/P3 Edge suite               | `84/84 checks passed`                                             | PASS   |
-| axe WCAG 2.1 A/AA                   | No violations on landing, demo or analyze at tested widths        | PASS   |
-| Keyboard                            | Visible focus outline; next nav item reachable                    | PASS   |
-| Desktop / tablet / mobile           | No page-level horizontal overflow; scope cards reflow             | PASS   |
-| P2 print PDF                        | `artifacts/browser-check/report-print.pdf`, 89,465 bytes          | PASS   |
-| P3 print PDF                        | `artifacts/browser-check/analyze-report-print.pdf`, 353,696 bytes | PASS   |
-| P3 sample and navigation            | 3 documents, 7 sections, 17 scope rows                            | PASS   |
-| P3 corrections and reset            | Correction tag/audit log; reset removes correction                | PASS   |
-| P3 filters, evidence, copy question | Filtered rows, evidence drilldown and clipboard verified          | PASS   |
-| P3 upload rejections                | Image-only and encrypted files rejected; sample reloads           | PASS   |
-| Prompt-injection markup             | Escaped; no injected global or script execution                   | PASS   |
-| Browser console / uncaught errors   | None recorded                                                     | PASS   |
+| Check                            | Actual                                                                                                | Status |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- | ------ |
+| Northline arithmetic             | Subtotal `$459,000.00`; 6% tax `$27,540.00`; total `$486,540.00`; matches stated                      | PASS   |
+| Cascade arithmetic               | 8 lines; materials total `$209,200.00`; tax unreported; matches stated                                | PASS   |
+| Sagebrush arithmetic             | Expected `$505,662.40`; stated `$508,162.40`; discrepancy `$2,500.00`                                 | PASS   |
+| Ambiguous tax treatment          | Unknown tax inclusion yields `insufficient_data` and no fabricated expected total                     | PASS   |
+| Willow bathroom                  | Stated total `$40,957.50`; waterproofing and ventilation included; bathroom scope only                | PASS   |
+| Harbor bathroom                  | Stated total `$27,700.00`; waterproofing and ventilation excluded; no sitework row                    | PASS   |
+| Comparison statuses              | Expected status cells match fixture ground truth, including conflicts and separately contracted scope | PASS   |
+| Evidence coordinates             | Every cited document/page/line/span resolves; silent cells carry no evidence                          | PASS   |
+| Prompt injection                 | 2 security findings; instruction text retained as evidence; no execution or prompt leakage            | PASS   |
+| Image-only and encrypted PDFs    | Zero accepted documents; `NO_TEXT` and `ENCRYPTED` rejections visible in review                       | PASS   |
+| Partial PDF                      | Page 1 retained; pages 2-3 marked unreadable; affected roofing scope `UNREADABLE`                     | PASS   |
+| Duplicate/empty/non-PDF/oversize | Rejected with `DUPLICATE`, `EMPTY_FILE`, `NOT_PDF`, `FILE_TOO_LARGE`                                  | PASS   |
+| Corrected total                  | Recalculates to match and removes arithmetic finding; original remains unchanged                      | PASS   |
+| Line-category correction         | Updates comparison cell and records reviewer audit entry; original category preserved                 | PASS   |
 
-Artifacts are gitignored under `artifacts/browser-check/`; `results.json` records the check list. Automated browser checks do not replace owner acceptance or independent human accessibility review.
+## API and security verification
 
-## GitHub Actions CI (2026-10-20)
+| Check                       | Actual                                                                                     | Status |
+| --------------------------- | ------------------------------------------------------------------------------------------ | ------ |
+| `POST /api/analyze/sample`  | HTTP 200; 3 documents; 21 findings; 20 with evidence; 32 line items; `SAMPLE-*` provenance | PASS   |
+| `POST /api/analyze`         | HTTP 200 raw analysis; sanitized file name; `DOC-*` ID; `no-store`                         | PASS   |
+| Analysis IDs                | Upload `DOC-*`; sample `SAMPLE-*`; empty `DOC-EMPTY` / `SAMPLE-EMPTY`                      | PASS   |
+| Declared oversize request   | HTTP 413 with sanitized message                                                            | PASS   |
+| Streamed oversize request   | Browser multipart request stopped at 8 MiB and returns HTTP 413                            | PASS   |
+| Unsupported content type    | HTTP 415 JSON                                                                              | PASS   |
+| Missing/too many files      | HTTP 400 JSON                                                                              | PASS   |
+| Rejection reasons in review | Named reasons render when no document passes validation                                    | PASS   |
+| Security headers            | nosniff, `DENY` framing, no-referrer, permissions policy, COOP, CORP and CSP restrictions  | PASS   |
+| Cache-Control               | `no-store` on analysis responses                                                           | PASS   |
+| Secrets                     | No server secret is exposed through `NEXT_PUBLIC_*`; `.env.example` contains placeholders  | PASS   |
 
-| Check                                | Actual                                                   | Status |
-| ------------------------------------ | -------------------------------------------------------- | ------ |
-| Initial push workflow                | Run `39514336718`, commit `c05924b`, Ubuntu / Node.js 24 | PASS   |
-| Format, lint, typecheck, test, build | Completed successfully                                   | PASS   |
+## Historical baseline (2026-10-20)
 
-The workflow file is `.github/workflows/ci.yml`. The Edge browser harness is not part of CI.
+The original P0-P3 baseline on HEAD `8398425` recorded:
+
+- `npm run verify` passed with 6 test files / 51 tests and a production build.
+- `npm run verify:browser` passed 84/84 checks against the P2 demo plus P3 lab.
+- GitHub Actions CI run `39514595890` passed format, lint, typecheck, tests and production build on Ubuntu/Node 24.
+- Initial publication workflow `39514336718` passed on commit `c05924b`.
+- Master prompt SHA-256 remained `B36FAFB37E281E31FCEB565C24E05EA80B9A26A5E03B920D6B277B2ABB28D391`.
+
+The 2026-10-22 unified five-step revision replaced the separate P2 demo source, added project-specific scope, change reviews and screening questions, and moved tests/browser checks to the current counts above. The historical results remain evidence for the earlier commit, not the current working tree.
 
 ## P1 public endpoint reachability (2026-10-20)
 
@@ -98,54 +127,30 @@ The workflow file is `.github/workflows/ci.yml`. The Edge browser harness is not
 | USGS EPQS documentation            | `https://epqs.nationalmap.gov/v1/docs`                         | HTTP `500` earlier in P1                                       | FAIL / recorded |
 | Craftsman NEC API specification    | `https://nec-api.craftsman-book.com/nec-api/v1.0/nec-api.json` | HTTP `200`; 19,339 bytes; six documented paths                 | PASS            |
 
-Notes:
-
-- PowerShell `Invoke-WebRequest` could not establish TLS with `hazards.fema.gov` in this environment; `curl.exe` succeeded with identical output. This is an environment/network observation, not a FEMA outage claim.
-- Reachability does not mean terms, rate limits or commercial use are verified. No adapter was built.
-- No provider data was stored or redistributed.
-
-## P2 unit test mapping
-
-| ID      | Requirement      | Result |
-| ------- | ---------------- | ------ |
-| T-P2-01 | REQ-105, REQ-210 | PASS   |
-| T-P2-02 | REQ-105          | PASS   |
-| T-P2-03 | REQ-102          | PASS   |
-| T-P2-04 | REQ-103          | PASS   |
-| T-P2-05 | REQ-500          | PASS   |
-| T-P2-06 | REQ-210          | PASS   |
-| T-P2-07 | REQ-212          | PASS   |
-| T-P2-08 | REQ-212          | PASS   |
-| T-P2-09 | REQ-500          | PASS   |
-
-## P0 historical results
-
-- `npm install --no-audit --no-fund`: dependencies installed; ESLint 9.39.5 deprecation warning noted.
-- `npm run verify` passed at P0 with 8 tests and a two-route build.
-- `npm audit --omit=dev`: 0 vulnerabilities.
-- `npm audit` (all): 5 high-severity `braces` advisories in the development lint toolchain; no non-breaking fix applied.
-- `Get-FileHash -Algorithm SHA256 masterprompt.md`: hash unchanged.
+Reachability does not mean terms, rate limits or commercial use are verified. No adapter was built and no provider data was stored or redistributed.
 
 ## Not executed / unverified
 
-- Edge browser harness in GitHub Actions (it remains a local Windows check).
+- Fresh-clone recovery against the current working tree. The remote still points at HEAD `8398425`; the 2026-10-22 changes must be committed and pushed before a true fresh-clone exercise can verify them.
+- Edge browser harness in GitHub Actions. It remains a local Windows check.
 - Deployment, hosting or production behavior.
 - Screen-reader behavior with assistive technology; automated axe checks do not prove screen-reader usability.
 - Independent human product and accessibility review.
-- AI extraction, OCR, arbitrary-vendor PDF accuracy, approved extraction corpus, prompt-injection variants beyond the synthetic fixtures.
-- Authentication, authorization, tenant isolation, rate limiting, streaming request-body enforcement and retention/deletion.
-- Stripe, webhooks, entitlements, secure downloads, server-side PDF.
-- Deployment packaging for the fixture-backed sample route.
-- Any live public-data adapter, cache, contract test or fallback.
-- Any paid cost-data mode, provider or license.
-- Any real customer document processing.
+- AI extraction, OCR, arbitrary-vendor PDF accuracy, approved extraction corpus and prompt-injection variants beyond the synthetic fixtures.
+- Authentication, authorization, tenant isolation, origin policy, rate limiting and retention/deletion.
+- Stripe, webhooks, entitlements, secure downloads and server-side PDF.
+- Deployment packaging for the `fixtures/samples/` sample route.
+- Live public-data adapters, caches, contract tests or fallbacks.
+- Paid cost-data modes, providers or licenses.
+- Real customer document processing.
 - Competitor functionality under identical inputs (this is not a benchmark).
 
 ## Known issues
 
-- Full `npm audit` is not clean for development-only tooling (`braces` via `eslint-config-next`). Production dependencies are clean. The proposed `npm audit fix --force` downgrade was not applied.
+- Full `npm audit` was not rerun for this revision; the prior development-only `braces` advisory remains recorded and production dependencies were clean.
 - ESLint 9.39.5 is deprecated; retained because `eslint-plugin-react` peer support stops at ESLint 9.
 - The local Node v25.6.1 is outside REA's documented support list, so REA setup is deferred.
-- `POST /api/analyze` enforces the 8 MiB request limit after multipart parsing; no streaming/proxy limit has been verified.
-- The PDF extraction timeout stops the wait but does not synchronously cancel PDF.js work.
-- The sample route depends on `tests/fixtures/synthetic` being present next to the running server.
+- The PDF extraction timeout stops the wait and destroys the document once available, but cannot synchronously cancel a `getDocumentProxy` promise that never settles.
+- The parser is template-specific; no arbitrary-vendor extraction accuracy is claimed.
+- Changes and screening questions are local/session-only and remain unverified.
+- The sample route depends on `fixtures/samples/` being present next to the running server.

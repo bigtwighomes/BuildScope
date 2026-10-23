@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
@@ -619,6 +619,244 @@ const sagebrush = new Proposal("Sagebrush Construction", "Cost-plus construction
   )
   .finish();
 
+const willow = new Proposal("Willow Bath Studio", "Bathroom renovation proposal", {})
+  .page(
+    metadataBlock([
+      ["Proposal number", "WB-2026-014"],
+      ["Contractor", "Willow Bath Studio"],
+      ["Proposal date", "2026-10-08"],
+      ["Project", "Maple Street bathroom"],
+      ["Project type", "bathroom_renovation"],
+      ["Pricing basis", "fixed_price"],
+      ["Validity", "30 days from proposal date"],
+      ["Contact", "estimates@willowbath.example"],
+    ]),
+    section("PROJECT SUMMARY"),
+    paragraph(
+      "Willow Bath Studio proposes a complete bathroom renovation with waterproofing, ventilation and finish work.",
+      "Existing conditions are assumed to be serviceable until demolition exposes the walls and floor.",
+    ),
+    section("SCOPE OF WORK"),
+    bullet("Remove the existing bathroom finishes and fixtures."),
+    bullet("Install new plumbing, electrical, ventilation, waterproofing, tile and vanity."),
+    section("LINE ITEMS"),
+    lineItem({
+      id: "LI-01",
+      description: "Demolition and disposal",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "2,400.00",
+      extended: "2,400.00",
+    }),
+    lineItem({
+      id: "LI-02",
+      description: "Plumbing rough-in and drain relocation",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "6,800.00",
+      extended: "6,800.00",
+    }),
+    lineItem({
+      id: "LI-03",
+      description: "Electrical and exhaust fan",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "3,200.00",
+      extended: "3,200.00",
+    }),
+    lineItem({
+      id: "LI-04",
+      description: "Cement board and waterproofing",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "4,600.00",
+      extended: "4,600.00",
+    }),
+  )
+  .page(
+    section("LINE ITEMS CONTINUED"),
+    lineItem({
+      id: "LI-05",
+      description: "Floor tile and wall tile",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "9,500.00",
+      extended: "9,500.00",
+    }),
+    lineItem({
+      id: "LI-06",
+      description: "Vanity, countertop and sink",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "5,200.00",
+      extended: "5,200.00",
+    }),
+    lineItem({
+      id: "LI-07",
+      description: "Shower glass and fixtures",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "3,900.00",
+      extended: "3,900.00",
+    }),
+    lineItem({
+      id: "LI-08",
+      description: "Paint, trim and final clean",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "2,500.00",
+      extended: "2,500.00",
+    }),
+    tableLine("Subtotal: $38,100.00"),
+    tableLine("Sales tax: 7.5% included, $2,857.50"),
+    tableLine("Total: $40,957.50"),
+    section("EXCLUSIONS"),
+    tableLine("EX-01 | Structural framing repair | Not included unless concealed damage is found."),
+    tableLine("EX-02 | Permit fees | Allowance only; final fee is set by the authority."),
+    section("MATERIAL SPECIFICATIONS"),
+    tableLine("Tile specification: Porcelain floor tile and ceramic wall tile"),
+    tableLine("Waterproofing method: Bonded sheet membrane in the wet area"),
+    tableLine("Vanity specification: White oak vanity with quartz countertop"),
+    tableLine("Ventilation specification: 110 CFM ceiling exhaust fan"),
+    tableLine("Fixture specification: Brushed nickel shower and sink fixtures"),
+  )
+  .page(
+    section("RESPONSIBILITIES"),
+    tableLine("Supplies: Willow Bath Studio"),
+    tableLine("Purchases: Willow Bath Studio"),
+    tableLine("Pays: Willow Bath Studio for included scope"),
+    tableLine("Installs: Willow Bath Studio and licensed trade contractors"),
+    tableLine("Coordinates: Willow Bath Studio"),
+    tableLine("Delivers: Willow Bath Studio"),
+    tableLine("Unloads: Willow Bath Studio"),
+    tableLine("Warrants: Willow Bath Studio, one year workmanship"),
+    section("PAYMENT TERMS"),
+    tableLine("Deposit: 30% at signing"),
+    tableLine("Payment schedule: progress draws; balance at completion"),
+    tableLine("Payment schedule total: $40,957.50"),
+    section("CHANGE ORDER TERMS"),
+    tableLine("Change order fee: 10% of changed work plus $250 administration fee."),
+    section("QUALIFICATIONS"),
+    tableLine("Synthetic test document created by BuildScope Check. Not a real offer."),
+  )
+  .finish();
+
+const harbor = new Proposal("Harbor Renovation Co", "Bathroom renovation proposal", {})
+  .page(
+    metadataBlock([
+      ["Proposal number", "HR-2026-221"],
+      ["Contractor", "Harbor Renovation Co"],
+      ["Proposal date", "2026-10-09"],
+      ["Project", "Maple Street bathroom"],
+      ["Project type", "bathroom_renovation"],
+      ["Pricing basis", "fixed_price"],
+      ["Validity", "14 days from proposal date"],
+      ["Contact", "bids@harborreno.example"],
+    ]),
+    section("PROJECT SUMMARY"),
+    paragraph(
+      "Harbor Renovation Co proposes a fixed-price bathroom update based on the visible existing conditions.",
+      "Waterproofing and exhaust ventilation are excluded unless added by written change order.",
+    ),
+    section("SCOPE OF WORK"),
+    bullet("Remove existing finishes and install new tile, vanity and fixtures."),
+    bullet("The price assumes the existing plumbing and electrical layout remains unchanged."),
+    section("LINE ITEMS"),
+    lineItem({
+      id: "LI-01",
+      description: "Demolition and debris removal",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "1,800.00",
+      extended: "1,800.00",
+    }),
+    lineItem({
+      id: "LI-02",
+      description: "Plumbing fixture replacement",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "5,500.00",
+      extended: "5,500.00",
+    }),
+    lineItem({
+      id: "LI-03",
+      description: "Electrical outlets and lighting",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "2,900.00",
+      extended: "2,900.00",
+    }),
+  )
+  .page(
+    section("LINE ITEMS CONTINUED"),
+    lineItem({
+      id: "LI-04",
+      description: "Tile installation",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "8,000.00",
+      extended: "8,000.00",
+    }),
+    lineItem({
+      id: "LI-05",
+      description: "Vanity and countertop",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "4,000.00",
+      extended: "4,000.00",
+    }),
+    lineItem({
+      id: "LI-06",
+      description: "Shower and sink fixtures",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "3,500.00",
+      extended: "3,500.00",
+    }),
+    lineItem({
+      id: "LI-07",
+      description: "Paint and trim",
+      quantity: "1",
+      unit: "LS",
+      unitPrice: "2,000.00",
+      extended: "2,000.00",
+    }),
+    tableLine("Subtotal: $27,700.00"),
+    tableLine("Total: $27,700.00"),
+    section("EXCLUSIONS"),
+    tableLine(
+      "EX-01 | Waterproofing and shower pan | Not included; priced separately if requested.",
+    ),
+    tableLine("EX-02 | Bathroom exhaust fan and ducting | Not included."),
+    tableLine("EX-03 | Permits and inspections | Owner responsibility."),
+    tableLine("EX-04 | Concealed water or framing damage | Not included; change order required."),
+    section("MATERIAL SPECIFICATIONS"),
+    tableLine("Tile specification: Ceramic floor tile and wall tile"),
+    tableLine("Vanity specification: Painted vanity with laminate countertop"),
+    tableLine("Fixture specification: Chrome shower and sink fixtures"),
+  )
+  .page(
+    section("RESPONSIBILITIES"),
+    tableLine("Supplies: Harbor Renovation Co"),
+    tableLine("Purchases: Harbor Renovation Co for included scope"),
+    tableLine("Pays: Harbor Renovation Co for included scope"),
+    tableLine("Installs: Harbor Renovation Co"),
+    tableLine("Coordinates: Homeowner"),
+    tableLine("Delivers: Harbor Renovation Co"),
+    tableLine("Unloads: Homeowner"),
+    tableLine("Warrants: Harbor Renovation Co, 90 days workmanship"),
+    section("PAYMENT TERMS"),
+    tableLine("Deposit: 40% at signing"),
+    tableLine("Payment schedule: balance due at substantial completion"),
+    tableLine("Payment schedule total: $27,700.00"),
+    section("CHANGE ORDER TERMS"),
+    tableLine("Change order fee: $500 administration fee per change."),
+    section("QUALIFICATIONS"),
+    tableLine("Synthetic test document created by BuildScope Check. Not a real offer."),
+    tableLine("Estimate excludes concealed conditions and code upgrades."),
+  )
+  .finish();
+
 const northlinePath = await writeDocument("northline-builders-proposal.pdf", northline, {
   title: "Northline Builders synthetic proposal",
 });
@@ -628,6 +866,22 @@ await writeDocument("cascade-timber-materials-package.pdf", cascade, {
 await writeDocument("sagebrush-construction-cost-plus.pdf", sagebrush, {
   title: "Sagebrush Construction synthetic estimate",
 });
+await writeDocument("willow-bath-renovation.pdf", willow, {
+  title: "Willow Bath Studio synthetic renovation proposal",
+});
+await writeDocument("harbor-bath-renovation.pdf", harbor, {
+  title: "Harbor Renovation Co synthetic renovation proposal",
+});
+
+const sampleDir = path.resolve("fixtures/samples");
+await mkdir(sampleDir, { recursive: true });
+for (const fileName of [
+  "northline-builders-proposal.pdf",
+  "cascade-timber-materials-package.pdf",
+  "sagebrush-construction-cost-plus.pdf",
+]) {
+  await copyFile(path.join(outputDir, fileName), path.join(sampleDir, fileName));
+}
 
 await writeDocument(
   "partial-proposal.pdf",
